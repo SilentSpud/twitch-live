@@ -107,7 +107,7 @@
 
     const len = streams ? streams.length : 0;
 
-    $(".streamDiv").unbind("click");
+    $(".streamDiv").off("click");
     $("#streamList").empty();
 
     if (!len) {
@@ -147,9 +147,9 @@
     $("#streamList").append(html);
 
     //$(".channelLink").bind("click", onChannelClick);
-    $(".streamDiv").bind("click", onChannelClick);
+    $(".streamDiv").on("click", onChannelClick);
 
-    $(".streamSectionTitle").bind("click", onGameTitleClick);
+    $(".streamSectionTitle").on("click", onGameTitleClick);
   }
 
   function onRefreshUp() {
@@ -165,12 +165,12 @@
     $("#noStreamsDiv").hide();
     $("#errorContainer").hide();
     $("#optionsErrorDiv").hide();
-    $("#refreshAnchor").bind("click", onRefreshClick);
-    $("#twitchAnchor").bind("click", onTwitchClick);
-    $("#optionsAnchor").bind("click", onOptionsClick);
+    $("#refreshAnchor").on("click", onRefreshClick);
+    $("#twitchAnchor").on("click", onTwitchClick);
+    $("#optionsAnchor").on("click", onOptionsClick);
 
-    $("#refreshAnchor").bind("mousedown", onRefreshDown);
-    $("#refreshAnchor").bind("mouseup mouseout", onRefreshUp);
+    $("#refreshAnchor").on("mousedown", onRefreshDown);
+    $("#refreshAnchor").on("mouseup mouseout", onRefreshUp);
 
     openInPopout = localStorage.openInPopout === "true";
     background = chrome.extension.getBackgroundPage();

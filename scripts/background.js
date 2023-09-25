@@ -318,7 +318,7 @@
     let onData = function (data) {
       let results = data.data;
 
-      if (!results || results.length < 0) {
+      if (!results || results.length === 0) {
         console.log("ERROR : COULD NOT RETRIEVE USER ID");
         return;
       }
