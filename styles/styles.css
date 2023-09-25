@@ -1,0 +1,125 @@
+/*
+	Copyright 2022
+	Mike Chambers
+	mikechambers@gmail.com
+
+	http://www.mikechambers.com
+*/
+
+body {
+  min-width: 350px;
+  min-height: 100px;
+  /*font: 12px 'Lucida Grande', Arial, Noto Sans, Monospace, sans-serif;*/
+  font: 12px "Verdana";
+  padding: 1.75em;
+  overflow-x: hidden;
+}
+
+h1 {
+  font: 16px "Helvetica";
+  font-size: 20px;
+  border-bottom: 1px solid #c5c5c5;
+}
+
+a {
+  text-decoration: underline;
+  color: #333333;
+}
+
+a:hover {
+  text-decoration: none;
+}
+
+ul {
+  margin-left: 5px;
+  padding-left: 5px;
+  line-height: 1.5;
+}
+
+ul li:before {
+  content: "\00BB \0020";
+}
+
+.streamSectionTitle {
+  text-transform: uppercase;
+  font-size: 12px;
+  padding-left: 1px;
+  padding-bottom: 3px;
+  border-bottom: 1px solid #c5c5c5;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.streamSectionTitle:hover {
+  /*cursor:default;*/
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.streamSectionTitle:hover {
+  cursor: pointer;
+}
+
+#errorContainer {
+  display: none;
+  font-size: 90%;
+  color: #ff0303;
+  position: fixed;
+  width: 90%;
+  text-align: center;
+  bottom: 0px;
+}
+
+#refreshAnchor {
+  float: right;
+}
+
+#optionsErrorDiv {
+  display: none;
+  text-align: center;
+}
+
+#noStreamsDiv {
+  display: none;
+  text-align: center;
+}
+
+.streamDiv {
+  padding-left: 3px;
+  padding-right: 3px;
+  padding-top: 3px;
+  padding-bottom: 2px;
+  margin: 4px;
+  border-bottom: 1px dashed rgba(197, 197, 197, 0.5);
+
+  -webkit-transition: background-color 250ms linear;
+  transition: background-color 250ms linear;
+}
+
+.streamDiv:hover {
+  background-color: #e1e7ef;
+  cursor: pointer;
+}
+
+.channelCount {
+  font-size: 80%;
+  float: right;
+}
+
+#streamContainer {
+  background-color: #ffffff;
+  border-width: 1px;
+  border-color: #999999;
+  -webkit-border-radius: 8px;
+  border-radius: 8px;
+  padding-top: 20px;
+}
+
+#streamList {
+  list-style-type: none;
+}
+
+.refreshImgDown {
+  -webkit-transform: translate(1px, 1px);
+  transform: translate(1px, 1px);
+}

@@ -1,0 +1,51 @@
+
+<!-- 
+	Copyright 2022
+	Mike Chambers
+	mikechambers@gmail.com
+	
+	http://www.mikechambers.com
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Twitch Live - Options</title>
+  <link rel="stylesheet" href="styles/options.css" type="text/css" />
+  <script type="application/javascript" src="scripts/options.js" defer></script>
+</head>
+
+<body>
+
+  <div id="header">
+    <h1>Twitch Live Extension Options</h1>
+  </div>
+
+  <form name="optionsform" accept-charset="utf-8">
+    <div class="gc-settings-content">
+      <table class="gc-settings-table" id="gc-settings-voicemail-content">
+        <tr>
+          <th class="left">Twitch Account</th>
+          <td class="right">
+            <span id="userName"></span>
+            <button id="authenticateButton">Authenticate</button>
+          </td>
+        </tr>
+        <tr>
+          <th class="left">Open Streams in Popout Window</th>
+          <td class="right">
+            <input type="checkbox" id="openInPopoutCheck" />
+          </td>
+        </tr>
+      </table>
+    </div>
+  </form>
+
+  <div id="footer">
+    <span id="status" style="margin-left: 10px; color: #0e5ecf; font-weight:bold;">Options Saved</span>
+  </div>
+
+</body>
+
+</html>

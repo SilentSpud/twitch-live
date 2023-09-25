@@ -1,0 +1,41 @@
+{
+  "background": {
+    "persistent": true,
+    "scripts": [
+      "scripts/jquery-3.5.1.min.js",
+      "scripts/background.js"
+    ]
+  },
+  "browser_action": {
+    "default_icon": "images/icon.png",
+    "default_popup": "popup.html",
+    "default_title": "Twitch Live"
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "{55d8b663-ebee-46e9-886b-2539b1ebc9c7}"
+    }
+  },
+  "description": "Twitch TV extension for displaying a user's favorite channels which are currently live.",
+  "homepage_url": "http://www.mikechambers.com/blog/2011/07/06/jtv-live-a-google-chrome-extension-for-justin-tv/",
+  "icons": {
+    "128": "images/icon-128.png",
+    "16": "images/icon-16.png",
+    "48": "images/icon-48.png"
+  },
+  "manifest_version": 2,
+  "name": "Twitch Live",
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
+  },
+  "permissions": [
+    "*://*.twitch.tv/*",
+    "contextMenus",
+    "identity"
+  ],
+  "version": "2.0.1",
+  "web_accessible_resources": [
+    "images/icon.png"
+  ]
+}

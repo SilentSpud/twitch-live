@@ -1,0 +1,65 @@
+body {
+  font-family: helvetica, arial, sans-serif;
+  font-size: 80%;
+  margin: 10px;
+}
+
+#header {
+  padding-bottom: 1.5em;
+  padding-top: 1.5em;
+}
+
+#header h1 {
+  font-size: 156%;
+  display: inline;
+  padding-bottom: 43px;
+  padding-left: 75px;
+  padding-top: 40px;
+  background: url(images/icon-lg.png) no-repeat;
+  background-size: 67px;
+  background-position: 1px 18px;
+}
+
+#footer {
+  margin-left: 24px;
+  margin-top: 12px;
+}
+
+#status {
+  opacity: 0;
+  transition: opacity 1s linear;
+  transition: opacity 1s linear;
+}
+
+.gc-settings-content {
+  margin: 6px 6px 0 6px;
+  padding: 10px 10px 10px 10px;
+  color: #333;
+  border: 1px solid #dedede;
+  border-radius: 5px 5px;
+}
+
+.gc-settings-table {
+  width: 100%;
+  font-size: 1em;
+}
+
+#userName,
+.gc-settings-table .left,
+.gc-settings-table .right {
+  vertical-align: top;
+  border-bottom: 0 dotted #aaa;
+}
+
+.gc-settings-table th {
+  text-align: right;
+  width: 1%;
+  white-space: nowrap;
+  padding: 12px 24px 12px 12px;
+}
+
+.gc-settings-table td {
+  width: 99%;
+  white-space: nowrap;
+  padding: 12px;
+}

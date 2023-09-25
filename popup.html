@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<!-- 
+	Copyright 2022
+	Mike Chambers
+	mikechambers@gmail.com
+	
+	http://www.mikechambers.com
+-->
+
+<head>
+	<meta charset="utf-8" />
+
+	<meta name="author" content="Mike Chambers" />
+	<meta name="keywords" content="" />
+	<meta name="description" content="" />
+	<meta name="copyright" content="Mike Chambers" />
+	<meta name="robots" content="index,follow" />
+
+	<title>Twitch Live</title>
+
+	<script src="scripts/jquery-3.5.1.min.js"></script>
+	<script src="scripts/popup.js"></script>
+	<link rel="stylesheet" href="styles/reset.css">
+	<link rel="stylesheet" href="styles/styles.css">
+
+</head>
+
+<body>
+	<h1><a id="twitchAnchor" href="#"><img src="images/title.png" width="105" height="23" /></a><a id="refreshAnchor"
+			href="#"><img src="images/refresh.svg" width="16" height="16" id="refreshImg" alt="Refresh" /></a></h1>
+
+	<div id="optionsErrorDiv">Please login to your Twitch account in <a id="optionsAnchor" href="#">options</a>.</div>
+	<div id="noStreamsDiv">None of your streams are currently online.</div>
+
+
+	<div id="streamContainer">
+		<div id="streamList">
+		</div>
+	</div>
+
+	<div id="errorContainer"></div>
+
+</body>
+
+</html>
