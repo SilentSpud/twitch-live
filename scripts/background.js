@@ -50,10 +50,7 @@
   };
 
   let onStorageUpdate = function (e) {
-    if (
-      e.key === USER_ID_STORAGE_TOKEN ||
-      e.key === ACCESS_TOKEN_STORAGE_TOKEN
-    ) {
+    if (e.key === USER_ID_STORAGE_TOKEN || e.key === ACCESS_TOKEN_STORAGE_TOKEN) {
       _userId = e.newValue;
       updateData();
     }
@@ -184,17 +181,13 @@
   };
 
   let handleError = function (errorName, errorStatus, errorMessage, url) {
-    console.log(
-      "------------------------Error Loading Data-------------------------------------"
-    );
+    console.log("------------------------Error Loading Data-------------------------------------");
     console.log("Error : " + errorName);
     console.log("Time : " + new Date().toString());
     console.log("URL : " + url);
     console.log("Status :", errorStatus);
     console.log("Description :", errorMessage);
-    console.log(
-      "------------------------------End Error----------------------------------------"
-    );
+    console.log("------------------------------End Error----------------------------------------");
   };
 
   let updateData = function () {
@@ -229,11 +222,7 @@
     //console.log("_accessToken", _accessToken);
     //console.log("_userName", _userName);
 
-    let isLoggedIn = !(
-      _userId == undefined ||
-      _accessToken == undefined ||
-      _userName == undefined
-    );
+    let isLoggedIn = !(_userId == undefined || _accessToken == undefined || _userName == undefined);
 
     if (!isLoggedIn) {
       logOutTwitch();
@@ -286,11 +275,7 @@
     _accessToken = null;
 
     if (accessToken) {
-      let revokeUrl =
-        "https://id.twitch.tv/oauth2/revoke?client_id=" +
-        CLIENT_ID +
-        "&token=" +
-        accessToken;
+      let revokeUrl = "https://id.twitch.tv/oauth2/revoke?client_id=" + CLIENT_ID + "&token=" + accessToken;
 
       callApi(
         revokeUrl,
@@ -353,11 +338,7 @@
       updateData();
     };
 
-    callApi(
-      "https://api.twitch.tv/helix/users",
-      onData,
-      "onAuthenticationError"
-    );
+    callApi("https://api.twitch.tv/helix/users", onData, "onAuthenticationError");
   };
 
   let authenticateWithTwitch = function () {

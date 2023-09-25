@@ -136,7 +136,9 @@
         //login name for the streamer (usually the same just different case)
         const streamName = !!stream.user_name ? stream.user_name : stream.user_login;
 
-        html += `<div title="${stream.title.replace(/"/g, "&quot;")}" class="streamDiv" data-url="${encodeURIComponent(stream.user_login)}">${streamName}<span class="channelCount">${new Intl.NumberFormat().format(stream.viewer_count)}</span></a></div>`;
+        html += `<div title="${stream.title.replace(/"/g, "&quot;")}" class="streamDiv" data-url="${encodeURIComponent(
+          stream.user_login
+        )}">${streamName}<span class="channelCount">${new Intl.NumberFormat().format(stream.viewer_count)}</span></a></div>`;
       }
 
       html += "<div>&nbsp;</div>";
