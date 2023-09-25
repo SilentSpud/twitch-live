@@ -40,8 +40,7 @@ function sortCategories(streams) {
   }
 
   let sortable = [];
-  let key;
-  for (key in gameHash) {
+  for (let key in gameHash) {
     if (gameHash.hasOwnProperty(key)) {
       sortable.push([key, gameHash[key]]);
     }
