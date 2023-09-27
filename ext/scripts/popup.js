@@ -1,3 +1,7 @@
+/// <reference lib="dom" />
+/// <reference types="firefox-webext-browser" />
+/// <reference types="jquery" />
+/// <reference types="chrome" />
 "use strict";
 
 var accountName;

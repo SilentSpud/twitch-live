@@ -1,0 +1,18 @@
+{
+  "name": "twitch-live",
+  "version": "0.1.0",
+  "description": "Twitch TV extension for displaying a user's favorite channels which are currently live.",
+  "main": "index.js",
+  "scripts": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SilentSpud/twitch-live.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/chrome": "^0.0.246",
+    "@types/firefox-webext-browser": "^111.0.2",
+    "@types/jquery": "^3.5.19"
+  }
+}

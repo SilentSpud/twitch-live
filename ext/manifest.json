@@ -32,7 +32,8 @@
   "permissions": [
     "*://*.twitch.tv/*",
     "contextMenus",
-    "identity"
+    "identity",
+    "storage"
   ],
   "version": "2.0.1",
   "web_accessible_resources": [

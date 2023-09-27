@@ -5,13 +5,59 @@
 
     http://www.mikechambers.com
 */
+/// <reference types="firefox-webext-browser" />
+/// <reference types="chrome" />
+/// <reference types="jquery" />
 
 /*jslint vars: true, plusplus: true, devel: true, nomen: true, indent: 4, maxerr: 50 */
-/*global browser, window, $, webkitNotifications, chrome */
 
 //check text status, when there is a timeout, add additional delay
 
 "use strict";
+
+/**
+ * Represents a Twitch live background class.
+ * @class
+ */
+class TwitchLiveBackground {
+  /**
+   * The Twitch client ID.
+   * @type {string}
+   */
+  #ClientID = "qxn1utz0tedn3vjv4k0tlrf5zfnpr3";
+
+  /**
+   * The update interval for the background in milliseconds.
+   * @type {number}
+   * @private
+   * @default 2 minutes (2 * 1000 * 60 milliseconds)
+   */
+  #UpdateInterval = 2 * 1000 * 60;
+
+  /**
+   * Creates an instance of TwitchLiveBackground.
+   * @constructor
+   */
+  constructor() {
+    /**
+     * The storage token for the user name.
+     * @type {string}
+     */
+    this.USER_NAME_STORAGE_TOKEN = "USER_NAME_STORAGE_TOKEN";
+
+    /**
+     * The storage token for the user ID.
+     * @type {string}
+     */
+    this.USER_ID_STORAGE_TOKEN = "USER_ID_STORAGE_TOKEN";
+
+    /**
+     * The storage token for the access token.
+     * @type {string}
+     */
+    this.ACCESS_TOKEN_STORAGE_TOKEN = "ACCESS_TOKEN_STORAGE_TOKEN";
+  }
+}
 
 const UPDATE_INTERVAL = 60 * 1000 * 2; //2 minutes
 
