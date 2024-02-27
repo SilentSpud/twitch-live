@@ -5,11 +5,6 @@
 
     http://www.mikechambers.com
 */
-/// <reference lib="dom" />
-/// <reference types="firefox-webext-browser" />
-/// <reference types="chrome" />
-/// <reference types="jquery" />
-
 /*jslint vars: true, plusplus: true, devel: true, nomen: true, indent: 4, maxerr: 50 */
 "use strict";
 
@@ -19,7 +14,6 @@
  */
 class TwitchLiveBackground {
   /** The Twitch client ID.
-   * @type {string}
    * @private
    */
   #ClientID = "qxn1utz0tedn3vjv4k0tlrf5zfnpr3";
@@ -28,48 +22,48 @@ class TwitchLiveBackground {
    * @type {number}
    * @default 2 minutes (2 * 1000 * 60 milliseconds)
    */
-  UpdateInterval = 2 * 1000 * 60;
+  UpdateInterval: number = 2 * 1000 * 60;
 
   /** Twitch API access token.
    * @type {string}
    * @private
    */
-  #AccessToken;
+  #AccessToken: string = "";
 
   /** Twitch user ID.
    * @type {string}
    * @private
    */
-  #UserID;
+  #UserID: string = "";
 
   /** Twitch username.
    * @type {string}
    * @private
    */
-  #UserName;
+  #UserName: string = "";
 
   /** Active timer
-   * @type {number | null}
+   * @type {number | undefined}
    */
-  _timer = null;
+  _timer: number | undefined;
 
   /** Popup window
    * @type {Window}
    * @private
-   * @default null
+   * @default undefined
    */
-  #popup = null;
+  #popup: Window | undefined;
 
   /** Twitch live streams.
    * @type {Array}
    * @private
    * @default undefined
    */
-  #streams = undefined;
+  #streams: Array<any> = [];
 
   #errorMessage = "";
 
-  #streamBuffer = [];
+  #streamBuffer: string[] = [];
   
   #openInPopout = false;
 
@@ -111,7 +105,7 @@ class TwitchLiveBackground {
    * @returns {Promise<string | Record<string, string>>} The response from the Twitch API.
    * @private
    */
-  async #twitchApi(url, method = "GET", json = true) {
+  async #twitchApi(url: string, method: string = "GET", json: boolean = true): Promise<string | Record<string, string>> {
     const headers = new Headers({
       Accept: "application/vnd.twitchtv.v5+json",
       "Client-ID": this.#ClientID,
@@ -129,46 +123,39 @@ class TwitchLiveBackground {
       if (response.status === 401) {
         this.#twitchLogout(true);
       }
-      throw new Error(`${errorName} : ${response.status} : ${response.statusText}`);
+      throw new Error(`Error : ${response.status} : ${response.statusText}`);
     }
-    return json ? await response.json() : await response.text();
+    return json ? await response.json() as Record<string, string> : await response.text() as string;
   }
 
   /** Sets the popup window.
    *
    * @param {Window} popup
    */
-  setPopup(popup) {
+  setPopup(popup: Window) {
     this.#popup = popup;
   }
 
-  #updateIcon(_text, _color) {
-    let badgeColor = [0, 0, 0, 0];
-    let badgeText = "";
-
-    if (this.#streams !== undefined) {
-      badgeColor = [0, 0, 255, 255];
-      badgeText = String(this.#streams.length);
-    }
-
-    chrome.browserAction.setBadgeBackgroundColor({ color: badgeColor });
-    chrome.browserAction.setBadgeText({ text: badgeText });
+  updateIcon() {
+    chrome.browserAction.setBadgeBackgroundColor({ color: this.#streams !== undefined ? "#0000ff" : "#000000" });
+    chrome.browserAction.setBadgeText({ text: this.#streams !== undefined ? String(this.#streams.length) : "" });
   }
 
   async refresh() {
     if (this._timer) {
       window.clearTimeout(this._timer);
-      this._timer = null;
+      this._timer = undefined;
     }
     if (!this.#UserID) {
-      this.#updateIcon();
+      this.updateIcon();
       return;
     }
-    this._timer = window.setTimeout(() => window.background.refresh(), this.UpdateInterval);
+    this._timer = window.setTimeout(() => background.refresh(), this.UpdateInterval);
 
     this.#refreshStreams();
   }
-  async #refreshStreams(cursor) {
+
+  async #refreshStreams(cursor: string | undefined = undefined) {
     let cursorString = "";
     if (!cursor) {
       this.#streamBuffer = [];
@@ -179,16 +166,16 @@ class TwitchLiveBackground {
     //https://dev.twitch.tv/docs/api/reference#get-followed-streams
     const url = `https://api.twitch.tv/helix/streams/followed?first=100&user_id=${this.#UserID}${cursorString}`;
 
-    const data = await this.#twitchApi(url, "GET", true);
+    const data = await this.#twitchApi(url, "GET", true) as Record<string, any>;
     
-    this.#streamBuffer.push.apply(this.#streamBuffer, data.data);
+    this.#streamBuffer.push.apply(this.#streamBuffer, data["data"]);
 
-    let newCursor = data.pagination.cursor;
+    let newCursor = data["pagination"].cursor;
 
     if (!newCursor) {
       this.#streams = this.#streamBuffer;
 
-      this.#updateIcon();
+      this.updateIcon();
 
       try {
         if (this.#popup) {
@@ -277,7 +264,7 @@ class TwitchLiveBackground {
    * @private
    * @returns {Promise<void>}
    */
-  async #loadSettings() {
+  async #loadSettings(): Promise<void> {
     try {
       /** @type {{ userId: string, accessToken: string, userName: string }} */
       const { userId, accessToken, userName } = await browser.storage.local.get(["userId", "accessToken", "userName"]);
@@ -347,4 +334,5 @@ class TwitchLiveBackground {
   }
 }
 
-if (!window.background) window.background = new TwitchLiveBackground();
+// @ts-ignore
+const background = new TwitchLiveBackground();

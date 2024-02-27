@@ -11,8 +11,10 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
+    "@types/bun": "latest",
     "@types/chrome": "^0.0.246",
     "@types/firefox-webext-browser": "^111.0.2",
-    "@types/jquery": "^3.5.19"
+    "@types/jquery": "^3.5.19",
+    "typescript": "^5.3.3"
   }
 }

@@ -5,11 +5,6 @@
 
 	http://www.mikechambers.com
 */
-/// <reference lib="dom" />
-/// <reference types="firefox-webext-browser" />
-/// <reference types="chrome" />
-
-/*jslint vars: true, plusplus: true, devel: true, nomen: true, indent: 4, maxerr: 50 */
 
 "use strict";
 let openInPopoutCB;
