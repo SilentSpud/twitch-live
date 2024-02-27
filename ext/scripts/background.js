@@ -63,9 +63,8 @@ class TwitchLiveBackground {
   /** Twitch live streams.
    * @type {Array}
    * @private
-   * @default undefined
    */
-  #streams = undefined;
+  #streams = [];
 
   #errorMessage = "";
 
@@ -78,7 +77,22 @@ class TwitchLiveBackground {
    */
   constructor() {
     this.#loadSettings();
-    this.#createContextMenu();
+
+    browser.contextMenus.create({
+      title: "About Twitch Live",
+      contexts: ["browser_action"],
+      onclick: function () {
+        browser.tabs.create({ url: "about.html" });
+      },
+    }); 
+
+    browser.contextMenus.create({
+      title: "Twitch Live Options",
+      contexts: ["browser_action"],
+      onclick: function () {
+        browser.tabs.create({ url: "options.html" });
+      },
+    });
   }
 
   get userName() {
@@ -111,7 +125,7 @@ class TwitchLiveBackground {
    * @returns {Promise<string | Record<string, string>>} The response from the Twitch API.
    * @private
    */
-  async #twitchApi(url, method = "GET", json = true) {
+  async #callTwitch(url, method = "GET", json = true) {
     const headers = new Headers({
       Accept: "application/vnd.twitchtv.v5+json",
       "Client-ID": this.#ClientID,
@@ -135,6 +149,7 @@ class TwitchLiveBackground {
   }
 
   /** Sets the popup window.
+   * This is called by the popup window when it's opened.
    *
    * @param {Window} popup
    */
@@ -168,26 +183,19 @@ class TwitchLiveBackground {
 
     this.#refreshStreams();
   }
-  async #refreshStreams(cursor) {
-    let cursorString = "";
-    if (!cursor) {
-      this.#streamBuffer = [];
-    } else {
-      cursorString = "&after=" + cursor;
-    }
+
+  async #refreshStreams(cursor = "") {
+    if (cursor === "") this.#streamBuffer = [];
 
     //https://dev.twitch.tv/docs/api/reference#get-followed-streams
-    const url = `https://api.twitch.tv/helix/streams/followed?first=100&user_id=${this.#UserID}${cursorString}`;
-
-    const data = await this.#twitchApi(url, "GET", true);
+    const data = await this.#callTwitch(`https://api.twitch.tv/helix/streams/followed?first=100&user_id=${this.#UserID}${cursor == "" ? cursor : `&after=${cursor}`}`, "GET", true);
     
     this.#streamBuffer.push.apply(this.#streamBuffer, data.data);
 
-    let newCursor = data.pagination.cursor;
+    const newCursor = data.pagination.cursor;
 
     if (!newCursor) {
       this.#streams = this.#streamBuffer;
-
       this.#updateIcon();
 
       try {
@@ -198,7 +206,7 @@ class TwitchLiveBackground {
         //https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Errors/Dead_object
       }
     } else {
-      loadLiveStreams(newCursor);
+      this.#refreshStreams(newCursor);
     }
   }
 
@@ -210,9 +218,9 @@ class TwitchLiveBackground {
       interactive: true,
     });
 
-    let search = response.split("/#");
-    let params = new URLSearchParams(search[1]);
-    let code = params.get("access_token");
+    const search = response.split("/#");
+    const params = new URLSearchParams(search[1]);
+    const code = params.get("access_token");
 
     if (code == null) {
       console.log("ERROR: Could not parse access token");
@@ -221,30 +229,22 @@ class TwitchLiveBackground {
 
     this.#AccessToken = code;
 
-    let views = browser.extension.getViews();
-    let optionsView;
-    for (let v of views) {
-      if (v.isOptions) {
-        optionsView = v;
-        break;
-      }
-    }
-
-    if (!optionsView) {
+    const views = browser.extension.getViews();
+    if (views.filter((v) => v.isOptions).length === 0) {
       console.log("ERROR: Could not find options");
       console.log(views);
       return;
     }
 
-    const data = await this.#twitchApi("https://api.twitch.tv/helix/users");
-    let results = data.data;
+    const data = await this.#callTwitch("https://api.twitch.tv/helix/users");
+    const results = data.data;
 
     if (!results || results.length === 0) {
       console.log("ERROR : COULD NOT RETRIEVE USER ID");
       return;
     }
 
-    let user = results[0];
+    const user = results[0];
     this.#UserID = user.id;
     this.#UserName = user.display_name;
 
@@ -254,7 +254,7 @@ class TwitchLiveBackground {
   async #twitchLogout(shouldRevoke = false) {
     if (this._timer) {
       window.clearTimeout(this._timer);
-      this._timer = null;
+      this._timer = undefined;
     }
 
     this.#streams = undefined;
@@ -264,11 +264,11 @@ class TwitchLiveBackground {
 
     if (!shouldRevoke) return;
 
-    await this.#twitchApi(`https://id.twitch.tv/oauth2/revoke?client_id=${this.#ClientID}&token=${this.#AccessToken}`, "POST");
+    await this.#callTwitch(`https://id.twitch.tv/oauth2/revoke?client_id=${this.#ClientID}&token=${this.#AccessToken}`, "POST");
     this.refresh();
-    this.#AccessToken = null;
-    this.#UserID = null;
-    this.#UserName = null;
+    this.#AccessToken = undefined;
+    this.#UserID = undefined;
+    this.#UserName = undefined;
   }
 
   /**
@@ -293,32 +293,14 @@ class TwitchLiveBackground {
 
     this.#updateIcon();
 
-    window.addEventListener("storage", this.#onStorageUpdate);
+    window.addEventListener("storage", this.onStorageUpdate);
 
     if (this.#UserID !== undefined && this.#AccessToken !== undefined && this.#UserName !== undefined) {
       this.refresh();
     }
   }
 
-  #createContextMenu() {
-    browser.contextMenus.create({
-      title: "About Twitch Live",
-      contexts: ["browser_action"],
-      onclick: function () {
-        browser.tabs.create({ url: "about.html" });
-      },
-    }); 
-
-    browser.contextMenus.create({
-      title: "Twitch Live Options",
-      contexts: ["browser_action"],
-      onclick: function () {
-        browser.tabs.create({ url: "options.html" });
-      },
-    });
-  }
-
-  #onStorageUpdate(evt) {
+  onStorageUpdate(evt) {
     if (evt.key === USER_ID_STORAGE_TOKEN || evt.key === ACCESS_TOKEN_STORAGE_TOKEN) {
       this.#UserID = evt.newValue;
       this.refresh();

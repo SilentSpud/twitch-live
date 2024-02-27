@@ -13,7 +13,7 @@ function onOptionsClick(e) {
 }
 
 function onRefreshClick(e) {
-  background.updateData();
+  background.refresh();
   //todo: window.close();
 }
 
