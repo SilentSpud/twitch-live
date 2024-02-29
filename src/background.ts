@@ -5,8 +5,12 @@
 
     http://www.mikechambers.com
 */
-/*jslint vars: true, plusplus: true, devel: true, nomen: true, indent: 4, maxerr: 50 */
-"use strict";
+import browser from "webextension-polyfill";
+
+export type Message = {
+  command: string;
+  data?: any;
+};
 
 /**
  * Represents a Twitch live background class.
@@ -16,55 +20,46 @@ class TwitchLiveBackground {
   /** The Twitch client ID.
    * @private
    */
-  #ClientID = "qxn1utz0tedn3vjv4k0tlrf5zfnpr3";
+  #ClientID: string = "qxn1utz0tedn3vjv4k0tlrf5zfnpr3";
 
   /** The update interval for the background in milliseconds.
-   * @type {number}
    * @default 2 minutes (2 * 1000 * 60 milliseconds)
    */
   UpdateInterval: number = 2 * 1000 * 60;
 
   /** Twitch API access token.
-   * @type {string}
    * @private
    */
   #AccessToken: string = "";
 
   /** Twitch user ID.
-   * @type {string}
    * @private
    */
   #UserID: string = "";
 
   /** Twitch username.
-   * @type {string}
    * @private
    */
   #UserName: string = "";
 
   /** Active timer
-   * @type {number | undefined}
    */
-  _timer: number | undefined;
+  _timer: number | undefined = undefined;
 
-  /** Popup window
-   * @type {Window}
-   * @private
-   * @default undefined
+  /** Array of listener ports
+   *
    */
-  #popup: Window | undefined;
+  #ports: Array<browser.Runtime.Port> = [];
 
   /** Twitch live streams.
-   * @type {Array}
    * @private
-   * @default undefined
    */
   #streams: Array<any> = [];
 
   #errorMessage = "";
 
-  #streamBuffer: string[] = [];
-  
+  #streamBuffer = [];
+
   #openInPopout = false;
 
   /** Initializes a new instance of the TwitchLiveBackground class.
@@ -72,48 +67,106 @@ class TwitchLiveBackground {
    */
   constructor() {
     this.#loadSettings();
-    this.#createContextMenu();
+
+    browser.contextMenus.create({
+      title: "About Twitch Live",
+      contexts: ["browser_action"],
+      onclick: function () {
+        browser.tabs.create({ url: "about.html" });
+      },
+    });
+
+    browser.contextMenus.create({
+      title: "Twitch Live Options",
+      contexts: ["browser_action"],
+      onclick: function () {
+        browser.tabs.create({ url: "options.html" });
+      },
+    });
   }
 
-  get userName() {
-    return this.#UserName;
+  /**
+   * Loads settings from local storage.
+   * @private
+   */
+  async #loadSettings(): Promise<void> {
+    try {
+      type browserData = { userId: string; accessToken: string; userName: string };
+      const { userId, accessToken, userName } = (await browser.storage.local.get(["userId", "accessToken", "userName"])) as browserData;
+
+      if (userId && accessToken && userName) {
+        this.#UserID = userId;
+        this.#AccessToken = accessToken;
+        this.#UserName = userName;
+        await this.#refresh();
+      } else throw new Error("No user data found");
+    } catch (e) {
+      await this.#twitchLogout();
+    }
   }
 
-  get userId() {
-    return this.#UserID;
+  async listener(port: browser.Runtime.Port) {
+    this.#ports.push(port);
+
+    port.onMessage.addListener((message: Message) => this.#messenger(message, port));
+    port.onDisconnect.addListener((port) => {
+      // Remove the port from the list on disconnect
+      this.#ports = this.#ports.filter((p) => p !== port);
+    });
   }
 
-  get openInPopout() {
-    return this.#openInPopout;
-  }
-  set openInPopout(value) {
-    this.#openInPopout = !!value;
-  }
-
-  get streams() {
-    return this.#streams;
+  async #message(message: Message) {
+    for (const port of this.#ports) {
+      port.postMessage(message);
+    }
   }
 
-  get isLoggedIn() {
-    return this.#UserID !== undefined && this.#AccessToken !== undefined && this.#UserName !== undefined;
+  /**
+   * Asynchronous message handler
+   * @private
+   */
+  async #messenger(message: Message, port: browser.Runtime.Port) {
+    switch (message.command) {
+      case "twitchAuth":
+        return port.postMessage({ command: "loggedin", data: await this.#twitchLogin() } as Message);
+
+      case "twitchLogout":
+        await this.#twitchLogout();
+        return port.postMessage({ command: "loggedout", data: true } as Message);
+
+      case "userInfo":
+        return port.postMessage({ command: "info", data: { isLoggedIn: this.#UserID !== "", userName: this.#UserName } } as Message);
+
+      case "getPopout":
+        return port.postMessage({ command: "popout", data: this.#openInPopout } as Message);
+
+      case "setPopout":
+        return this.#openInPopout = message.data;
+
+      case "getStreams":
+        return port.postMessage({ command: "streams", data: this.#streams } as Message);
+
+      case "refreshStreams":
+        return this.#refresh();
+
+      case "getStatus":
+        return port.postMessage({ command: "status", data: this.#errorMessage } as Message);
+    }
   }
 
   /** Makes a request to the Twitch API.
    * @param {string} url - The URL to make the request to.
    * @param {string} [method="GET"] - The HTTP method to use for the request.
-   * @param {boolean} json - Whether or not the response should be parsed as JSON.
-   * @returns {Promise<string | Record<string, string>>} The response from the Twitch API.
+   * @returns {Promise<Response>} The response from the Twitch API.
    * @private
    */
-  async #twitchApi(url: string, method: string = "GET", json: boolean = true): Promise<string | Record<string, string>> {
-    const headers = new Headers({
-      Accept: "application/vnd.twitchtv.v5+json",
-      "Client-ID": this.#ClientID,
-      Authorization: `Bearer ${this.#AccessToken}`,
-    });
-
+  async #fetch(url: string, method: string = "GET"): Promise<Response> {
     const request = new Request(url, {
-      headers,
+      headers: new Headers({
+        Accept: "application/vnd.twitchtv.v5+json",
+        "Client-ID": this.#ClientID,
+        Authorization: `Bearer ${this.#AccessToken}`,
+      }),
       method: method,
       cache: "no-store",
     });
@@ -121,71 +174,52 @@ class TwitchLiveBackground {
     const response = await fetch(request);
     if (!response.ok) {
       if (response.status === 401) {
-        this.#twitchLogout(true);
+        this.#twitchLogout();
       }
-      throw new Error(`Error : ${response.status} : ${response.statusText}`);
+      throw new Error(`Error: ${response.status} : ${response.statusText}`);
     }
-    return json ? await response.json() as Record<string, string> : await response.text() as string;
+    return response;
   }
 
-  /** Sets the popup window.
-   *
-   * @param {Window} popup
-   */
-  setPopup(popup: Window) {
-    this.#popup = popup;
+  #updateIcon() {
+    const color = this.#streams.length > 0 ? "#0000FF" : "#000000";
+    const text = this.#streams.length > 0 ? String(this.#streams.length) : "";
+
+    chrome.browserAction.setBadgeBackgroundColor({ color });
+    chrome.browserAction.setBadgeText({ text });
   }
 
-  updateIcon() {
-    chrome.browserAction.setBadgeBackgroundColor({ color: this.#streams !== undefined ? "#0000ff" : "#000000" });
-    chrome.browserAction.setBadgeText({ text: this.#streams !== undefined ? String(this.#streams.length) : "" });
-  }
-
-  async refresh() {
+  async #refresh() {
     if (this._timer) {
       window.clearTimeout(this._timer);
       this._timer = undefined;
     }
     if (!this.#UserID) {
-      this.updateIcon();
+      this.#updateIcon();
       return;
     }
-    this._timer = window.setTimeout(() => background.refresh(), this.UpdateInterval);
+    this._timer = window.setTimeout((bg: TwitchLiveBackground) => bg.#refresh(), this.UpdateInterval, this);
 
     this.#refreshStreams();
   }
 
-  async #refreshStreams(cursor: string | undefined = undefined) {
-    let cursorString = "";
-    if (!cursor) {
-      this.#streamBuffer = [];
-    } else {
-      cursorString = "&after=" + cursor;
-    }
-
+  async #refreshStreams(cursor?: string) {
     //https://dev.twitch.tv/docs/api/reference#get-followed-streams
-    const url = `https://api.twitch.tv/helix/streams/followed?first=100&user_id=${this.#UserID}${cursorString}`;
+    const data = await this.#fetch(`https://api.twitch.tv/helix/streams/followed?first=100&user_id=${this.#UserID}${cursor ? `&after=${cursor}` : ""}`, "GET")
+      .then((response) => response.json())
+      .catch((e) => this.announceError(e.message));
 
-    const data = await this.#twitchApi(url, "GET", true) as Record<string, any>;
-    
-    this.#streamBuffer.push.apply(this.#streamBuffer, data["data"]);
+    this.#streamBuffer.push.apply(this.#streamBuffer, data.data);
 
-    let newCursor = data["pagination"].cursor;
+    const newCursor = data.pagination.cursor;
 
     if (!newCursor) {
       this.#streams = this.#streamBuffer;
-
-      this.updateIcon();
-
-      try {
-        if (this.#popup) {
-          this.#popup.updateView();
-        }
-      } catch (e) {
-        //https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Errors/Dead_object
-      }
+      this.#updateIcon();
+      this.#message({ command: "streams", data: this.#streams });
+      this.#streamBuffer = [];
     } else {
-      loadLiveStreams(newCursor);
+      this.#refreshStreams(newCursor);
     }
   }
 
@@ -197,126 +231,68 @@ class TwitchLiveBackground {
       interactive: true,
     });
 
-    let search = response.split("/#");
-    let params = new URLSearchParams(search[1]);
-    let code = params.get("access_token");
+    const search = response.split("/#");
+    const params = new URLSearchParams(search[1]);
+    const code = params.get("access_token");
 
     if (code == null) {
-      console.log("ERROR: Could not parse access token");
-      return;
+      console.error("Unable to parse the response from Twitch.");
+      return false;
     }
 
     this.#AccessToken = code;
+    await browser.storage.local.set({ accessToken: code });
 
-    let views = browser.extension.getViews();
-    let optionsView;
-    for (let v of views) {
-      if (v.isOptions) {
-        optionsView = v;
-        break;
-      }
-    }
-
-    if (!optionsView) {
-      console.log("ERROR: Could not find options");
-      console.log(views);
-      return;
-    }
-
-    const data = await this.#twitchApi("https://api.twitch.tv/helix/users");
-    let results = data.data;
+    const data = await this.#fetch("https://api.twitch.tv/helix/users")
+      .then((response) => response.json())
+      .catch((e) => this.announceError(e.message));
+    const results = data.data;
 
     if (!results || results.length === 0) {
-      console.log("ERROR : COULD NOT RETRIEVE USER ID");
-      return;
+      console.error("Unable to retrieve user data from Twitch API.");
+      return false;
     }
 
-    let user = results[0];
+    const user = results[0];
     this.#UserID = user.id;
     this.#UserName = user.display_name;
 
-    await browser.storage.local.set({ userId: this.#UserID, accessToken: this.#AccessToken, userName: this.#UserName });
+    await browser.storage.local.set({ userId: this.#UserID, userName: this.#UserName });
+    return true;
   }
 
-  async #twitchLogout(shouldRevoke = false) {
+  async #twitchLogout() {
     if (this._timer) {
       window.clearTimeout(this._timer);
-      this._timer = null;
+      this._timer = undefined;
     }
 
-    this.#streams = undefined;
+    this.#streams = [];
     this.#updateIcon();
 
     await browser.storage.local.remove(["userId", "accessToken", "userName"]);
 
-    if (!shouldRevoke) return;
+    await this.#fetch(`https://id.twitch.tv/oauth2/revoke?client_id=${this.#ClientID}&token=${this.#AccessToken}`, "POST");
 
-    await this.#twitchApi(`https://id.twitch.tv/oauth2/revoke?client_id=${this.#ClientID}&token=${this.#AccessToken}`, "POST");
-    this.refresh();
-    this.#AccessToken = null;
-    this.#UserID = null;
-    this.#UserName = null;
-  }
+    this.#AccessToken = "";
+    this.#UserID = "";
+    this.#UserName = "";
 
-  /**
-   * Loads settings from local storage.
-   * @async
-   * @private
-   * @returns {Promise<void>}
-   */
-  async #loadSettings(): Promise<void> {
-    try {
-      /** @type {{ userId: string, accessToken: string, userName: string }} */
-      const { userId, accessToken, userName } = await browser.storage.local.get(["userId", "accessToken", "userName"]);
-
-      if (userId && accessToken && userName) {
-        this.#UserID = userId;
-        this.#AccessToken = accessToken;
-        this.#UserName = userName;
-      } else throw new Error("No user data found");
-    } catch (e) {
-      await this.#twitchLogout();
-    }
-
+    this.#refresh();
     this.#updateIcon();
 
-    window.addEventListener("storage", this.#onStorageUpdate);
+    window.addEventListener("storage", this.onStorageUpdate);
+  }
 
-    if (this.#UserID !== undefined && this.#AccessToken !== undefined && this.#UserName !== undefined) {
-      this.refresh();
+  onStorageUpdate(evt: StorageEvent) {
+    if (evt.key === "USER_ID_STORAGE_TOKEN" || evt.key === "ACCESS_TOKEN_STORAGE_TOKEN") {
+      this.#UserID = evt.newValue ?? "";
+      this.#refresh();
     }
   }
 
-  #createContextMenu() {
-    browser.contextMenus.create({
-      title: "About Twitch Live",
-      contexts: ["browser_action"],
-      onclick: function () {
-        browser.tabs.create({ url: "about.html" });
-      },
-    }); 
-
-    browser.contextMenus.create({
-      title: "Twitch Live Options",
-      contexts: ["browser_action"],
-      onclick: function () {
-        browser.tabs.create({ url: "options.html" });
-      },
-    });
-  }
-
-  #onStorageUpdate(evt) {
-    if (evt.key === USER_ID_STORAGE_TOKEN || evt.key === ACCESS_TOKEN_STORAGE_TOKEN) {
-      this.#UserID = evt.newValue;
-      this.refresh();
-    }
-  }
-
-  BroadcastError(msg) {
+  announceError(msg: string) {
     this.#errorMessage = msg;
-    if (this.#popup) {
-      this.#popup.setErrorMessage(msg);
-    }
 
     //should move this to updateBadge
     if (msg) {
@@ -324,15 +300,8 @@ class TwitchLiveBackground {
       chrome.browserAction.setBadgeText({ text: "?" });
     }
   }
-
-  getErrorMessage() {
-    return this.#errorMessage;
-  }
-
-  async authenticateWithTwitch() {
-    return await this.#twitchLogin();
-  }
 }
 
-// @ts-ignore
-const background = new TwitchLiveBackground();
+const background: TwitchLiveBackground = new TwitchLiveBackground();
+
+browser.runtime.onConnect.addListener(background.listener.bind(background));

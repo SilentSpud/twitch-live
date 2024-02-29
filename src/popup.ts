@@ -1,24 +1,31 @@
-/// <reference lib="dom" />
-/// <reference types="firefox-webext-browser" />
-/// <reference types="jquery" />
-/// <reference types="chrome" />
-"use strict";
+import type { Message } from "./background";
+import browser from "webextension-polyfill";
 
-var accountName;
-var background;
-var openInPopout;
+const background = browser.runtime.connect({ name: "options" });
+background.onMessage.addListener((message: Message) => {
+  switch (message.command) {
+    case "info":
+      if (!message.data.isLoggedIn) {
+        $("#optionsErrorDiv").show();
+      }
+      break;
 
-function onOptionsClick(e) {
-  chrome.tabs.create({ url: "options.html" });
-}
+    case "status":
+      setErrorMessage(message.data);
+      break;
 
-function onRefreshClick(e) {
-  background.updateData();
-  //todo: window.close();
-}
+    case "streams":
+      updateView(message.data);
+      break;
 
-function setErrorMessage(msg) {
-  if (msg) {
+    default:
+      break;
+  }
+});
+background.postMessage({ command: "userInfo" } as Message);
+
+function setErrorMessage(msg: string = "") {
+  if (msg !== "") {
     //need this slight delay, or else the html wont be displayed
     $("#errorContainer").show().html(msg);
   } else {
@@ -26,8 +33,33 @@ function setErrorMessage(msg) {
   }
 }
 
-function sortCategories(streams) {
-  let gameHash = {};
+async function init() {
+  $("#streamList").empty();
+  $("#noStreamsDiv").hide();
+  $("#errorContainer").hide();
+  $("#optionsErrorDiv").hide();
+  $("#refreshAnchor").on("click", () => background.postMessage({ command: "refreshStreams" } as Message));
+  $("#optionsAnchor").on("click", () => chrome.tabs.create({ url: "options.html" }));
+
+  $("#refreshAnchor").on("mousedown", () => document.getElementById("refreshAnchor")?.classList.remove("refreshImgDown"));
+  $("#refreshAnchor").on("mouseup mouseout", () => document.getElementById("refreshAnchor")?.classList.add("refreshImgDown"));
+
+  background.postMessage({ command: "getStatus" } as Message);
+  background.postMessage({ command: "getStreams" } as Message);
+
+  //this is required so we can get the mouse cursor to change on hover
+
+  //hack to work around chrome extension bug that gives focus to the refreshAnchor
+  setTimeout(() => $("#refreshAnchor").trigger("blur"), 100);
+}
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", () => init());
+} else {
+  init();
+}
+
+function sortCategories(streams: any[]) {
+  let gameHash: Record<string, any> = {};
 
   for (const stream of streams) {
     let game = stream.game_name;
@@ -68,45 +100,7 @@ function sortCategories(streams) {
   return sortable;
 }
 
-function openURLInNewTab(url) {
-  if (!url) {
-    console.log("Error : url undefined.");
-    return;
-  }
-
-  if (openInPopout) {
-    url += "/popout";
-
-    chrome.windows.create({
-      url: url,
-      focused: true,
-      type: "popup",
-    });
-  } else {
-    chrome.tabs.create({ url: url });
-  }
-
-  window.close();
-}
-
-function onChannelClick(e) {
-  e.preventDefault();
-  openURLInNewTab("https://www.twitch.tv/" + $(e.target).attr("data-url"));
-}
-
-function onGameTitleClick(e) {
-  e.preventDefault();
-  openURLInNewTab("https://www.twitch.tv/directory/game/" + $(e.target).attr("data-url"));
-}
-
-function onTwitchClick(e) {
-  e.preventDefault();
-  openURLInNewTab("https://www.twitch.tv");
-}
-
-function updateView() {
-  const streams = background.streams;
-
+const updateView = (streams: any[]) => {
   const len = streams ? streams.length : 0;
 
   $(".streamDiv").off("click");
@@ -127,7 +121,7 @@ function updateView() {
     //category = sortedStreams[k];
     const categoryName = category[0];
 
-    html += `<div class="streamSectionTitle" data-url="${encodeURIComponent(categoryName)}">${categoryName}</div>`;
+    html += `<div class="streamSectionTitle"><a href="https://www.twitch.tv/directory/game/${encodeURIComponent(categoryName)}">${categoryName}</a></div>`;
 
     const gameStreams = category[1];
 
@@ -138,7 +132,7 @@ function updateView() {
       //login name for the streamer (usually the same just different case)
       const streamName = !!stream.user_name ? stream.user_name : stream.user_login;
 
-      html += `<div title="${stream.title.replace(/"/g, "&quot;")}" class="streamDiv" data-url="${encodeURIComponent(
+      html += `<div class="streamDiv"><a title="${stream.title.replace(/"/g, "&quot;")}" href="https://www.twitch.tv/${encodeURIComponent(
         stream.user_login
       )}">${streamName}<span class="channelCount">${new Intl.NumberFormat().format(stream.viewer_count)}</span></a></div>`;
     }
@@ -148,56 +142,12 @@ function updateView() {
 
   $("#streamList").append(html);
 
-  //$(".channelLink").bind("click", onChannelClick);
-  $(".streamDiv").on("click", onChannelClick);
+  // Replaced these with plain links
+  /*document.querySelectorAll(".streamDiv").forEach(el => el.addEventListener("click", () => {
 
-  $(".streamSectionTitle").on("click", onGameTitleClick);
-}
+  }));
 
-function onRefreshUp() {
-  document.getElementById("refreshAnchor").classList.remove("refreshImgDown");
-}
-
-function onRefreshDown() {
-  document.getElementById("refreshAnchor").classList.add("refreshImgDown");
-}
-
-$(function () {
-  $("#streamList").empty();
-  $("#noStreamsDiv").hide();
-  $("#errorContainer").hide();
-  $("#optionsErrorDiv").hide();
-  $("#refreshAnchor").on("click", onRefreshClick);
-  $("#twitchAnchor").on("click", onTwitchClick);
-  $("#optionsAnchor").on("click", onOptionsClick);
-
-  $("#refreshAnchor").on("mousedown", onRefreshDown);
-  $("#refreshAnchor").on("mouseup mouseout", onRefreshUp);
-
-  openInPopout = localStorage.openInPopout === "true";
-  background = chrome.extension.getBackgroundPage().background;
-
-  accountName = background.userName;
-
-  background.setPopup(window);
-
-  let error = background.getErrorMessage();
-  setErrorMessage(error);
-
-  if (!accountName) {
-    $("#optionsErrorDiv").show();
-    return;
-  }
-
-  updateView();
-
-  //this is required so we can get the mouse cursor to change on hover
-
-  //hack to work around chrome extension bug that gives focus to the refreshAnchor
-  setTimeout(function () {
-    $("#refreshAnchor").blur();
-  }, 100);
-});
-
-window.setErrorMessage = setErrorMessage;
-window.updateView = updateView;
+  document.querySelectorAll(".streamSectionTitle").forEach(el => el.addEventListener("click", () => {
+    
+  }));*/
+};

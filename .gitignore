@@ -1,3 +1,8 @@
+# Generated Files
+ext/scripts/background.js
+ext/scripts/options.js
+ext/scripts/popup.js
+
 # Logs
 logs
 *.log
