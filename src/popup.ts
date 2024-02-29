@@ -1,4 +1,5 @@
 import type { Message } from "./background";
+import $ from "jquery";
 import browser from "webextension-polyfill";
 
 const background = browser.runtime.connect({ name: "options" });
@@ -27,22 +28,33 @@ background.postMessage({ command: "userInfo" } as Message);
 function setErrorMessage(msg: string = "") {
   if (msg !== "") {
     //need this slight delay, or else the html wont be displayed
-    $("#errorContainer").show().html(msg);
+    const errorBox = document.querySelector<HTMLDivElement>("#errorContainer");
+    if (errorBox) {
+      errorBox.innerHTML = msg;
+      errorBox.style.display = "block";
+    }
   } else {
-    $("#errorContainer").hide();
+    const errorBox = document.querySelector<HTMLDivElement>("#errorContainer");
+    if (errorBox) {
+      errorBox.style.display = "none";
+    }
   }
 }
 
 async function init() {
-  $("#streamList").empty();
-  $("#noStreamsDiv").hide();
-  $("#errorContainer").hide();
-  $("#optionsErrorDiv").hide();
-  $("#refreshAnchor").on("click", () => background.postMessage({ command: "refreshStreams" } as Message));
-  $("#optionsAnchor").on("click", () => chrome.tabs.create({ url: "options.html" }));
+  const streamList = document.querySelector<HTMLDivElement>("#streamList");
+  if (!streamList) throw new Error("Error working with document.");
+  Array.from(streamList.children).forEach(el => el.remove());
 
-  $("#refreshAnchor").on("mousedown", () => document.getElementById("refreshAnchor")?.classList.remove("refreshImgDown"));
-  $("#refreshAnchor").on("mouseup mouseout", () => document.getElementById("refreshAnchor")?.classList.add("refreshImgDown"));
+  document.querySelectorAll<HTMLDivElement>("#noStreamsDiv, #errorContainer, #optionsErrorDiv").forEach(el => { el.style.display = "none" });
+
+  const refreshAnchor = document.querySelector<HTMLAnchorElement>("#refreshAnchor");
+  if (!refreshAnchor) throw new Error("Error working with document.");
+  refreshAnchor.addEventListener("click", () => background.postMessage({ command: "refreshStreams" } as Message));
+
+  refreshAnchor.addEventListener("mousedown", () => document.getElementById("refreshAnchor")?.classList.remove("refreshImgDown"));
+  refreshAnchor.addEventListener("mouseup", () => document.getElementById("refreshAnchor")?.classList.add("refreshImgDown"));
+  refreshAnchor.addEventListener("mouseout", () => document.getElementById("refreshAnchor")?.classList.add("refreshImgDown"));
 
   background.postMessage({ command: "getStatus" } as Message);
   background.postMessage({ command: "getStreams" } as Message);
@@ -103,7 +115,6 @@ function sortCategories(streams: any[]) {
 const updateView = (streams: any[]) => {
   const len = streams ? streams.length : 0;
 
-  $(".streamDiv").off("click");
   $("#streamList").empty();
 
   if (!len) {
@@ -121,7 +132,7 @@ const updateView = (streams: any[]) => {
     //category = sortedStreams[k];
     const categoryName = category[0];
 
-    html += `<div class="streamSectionTitle"><a href="https://www.twitch.tv/directory/game/${encodeURIComponent(categoryName)}">${categoryName}</a></div>`;
+    html += `<div class="streamSectionTitle"><a draggable="false" href="https://www.twitch.tv/directory/game/${encodeURIComponent(categoryName)}">${categoryName}</a></div>`;
 
     const gameStreams = category[1];
 
@@ -132,7 +143,7 @@ const updateView = (streams: any[]) => {
       //login name for the streamer (usually the same just different case)
       const streamName = !!stream.user_name ? stream.user_name : stream.user_login;
 
-      html += `<div class="streamDiv"><a title="${stream.title.replace(/"/g, "&quot;")}" href="https://www.twitch.tv/${encodeURIComponent(
+      html += `<div class="streamDiv"><a draggable="false" title="${stream.title.replace(/"/g, "&quot;")}" href="https://www.twitch.tv/${encodeURIComponent(
         stream.user_login
       )}">${streamName}<span class="channelCount">${new Intl.NumberFormat().format(stream.viewer_count)}</span></a></div>`;
     }
