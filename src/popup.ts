@@ -1,5 +1,4 @@
 import type { Message } from "./background";
-import $ from "jquery";
 import browser from "webextension-polyfill";
 
 const background = browser.runtime.connect({ name: "popup" });
@@ -8,7 +7,9 @@ background.onMessage.addListener((message: Message) => {
   switch (message.command) {
     case "info":
       if (!message.data.isLoggedIn) {
-        $("#optionsErrorDiv").show();
+        const optionsErrorDiv = document.querySelector<HTMLDivElement>("#optionsErrorDiv");
+        if (!optionsErrorDiv) throw new Error("Error working with document.");
+        optionsErrorDiv.style.display = "";
       }
       break;
 
@@ -60,9 +61,6 @@ async function init() {
 
   sendMessage({ command: "getStatus" });
   sendMessage({ command: "getStreams" });
-
-  //hack to work around chrome extension bug that gives focus to the refreshAnchor
-  setTimeout(() => $("#refreshAnchor").trigger("blur"), 100);
 }
 if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", () => init());
@@ -115,13 +113,16 @@ function sortCategories(streams: any[]) {
 const updateView = (streams: any[]) => {
   const len = streams ? streams.length : 0;
 
-  $("#streamList").empty();
+  const streamList = document.querySelector<HTMLDivElement>("#streamList");
+  const noStreamsDiv = document.querySelector<HTMLDivElement>("#noStreamsDiv");
+  if (!streamList || !noStreamsDiv) throw new Error("Error working with document.");
+  Array.from(streamList.children).forEach(el => el.remove());
 
   if (!len) {
-    $("#noStreamsDiv").show();
+    noStreamsDiv.style.display = "";
     return;
   } else {
-    $("#noStreamsDiv").hide();
+    noStreamsDiv.style.display = "none";
   }
 
   const sortedStreams = sortCategories(streams);
@@ -151,5 +152,5 @@ const updateView = (streams: any[]) => {
     html += "<div>&nbsp;</div>";
   }
 
-  $("#streamList").append(html);
+  streamList.innerHTML = html;
 };

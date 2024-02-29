@@ -2,7 +2,7 @@
   "compilerOptions": {
     // Enable latest features
     "lib": ["ESNext", "dom"],
-    "types": ["firefox-webext-browser", "jquery", "chrome", "bun"],
+    "types": ["firefox-webext-browser", "chrome", "bun"],
     "target": "ESNext",
     "module": "ESNext",
     "moduleDetection": "force",
