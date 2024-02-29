@@ -51,7 +51,8 @@ ul li:before {
   user-select: none;
 }
 
-.streamSectionTitle a, .streamDiv a {
+.streamSectionTitle a,
+.streamDiv a {
   display: block;
   text-decoration: none;
   color: #333333;

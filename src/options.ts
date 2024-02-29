@@ -19,11 +19,10 @@ background.onMessage.addListener((message: Message) => {
   }
 });
 
-
 const authenticateWithTwitch = () => sendMessage({ command: "twitchAuth" });
 const logOutTwitch = () => sendMessage({ command: "twitchLogout" });
 
-const checkLogin = async (userInfo: { isLoggedIn: Boolean; userName: string; }) => {
+const checkLogin = async (userInfo: { isLoggedIn: Boolean; userName: string }) => {
   const authBtn = document.getElementById("authenticateButton") as HTMLButtonElement;
   const userNameField = document.getElementById("userName") as HTMLSpanElement;
 
@@ -45,6 +44,5 @@ const onStorageUpdate = function () {
   window.addEventListener("storage", onStorageUpdate);
   sendMessage({ command: "userInfo" });
 };
-
 
 window.addEventListener("storage", onStorageUpdate);

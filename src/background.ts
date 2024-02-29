@@ -19,7 +19,19 @@ type RefreshStreamsMessage = { command: "refreshStreams" };
 type GetStatusMessage = { command: "getStatus" };
 type StatusMessage = { command: "status"; data: string };
 type ErrorMessage = { command: "error"; data: string };
-export type Message = AuthMessage | LoggedInMessage | LogoutMessage | LoggedOutMessage | UserInfoMessage | InfoMessage | GetStreamsMessage | StreamsMessage | RefreshStreamsMessage | GetStatusMessage | StatusMessage | ErrorMessage;
+export type Message =
+  | AuthMessage
+  | LoggedInMessage
+  | LogoutMessage
+  | LoggedOutMessage
+  | UserInfoMessage
+  | InfoMessage
+  | GetStreamsMessage
+  | StreamsMessage
+  | RefreshStreamsMessage
+  | GetStatusMessage
+  | StatusMessage
+  | ErrorMessage;
 
 /**
  * Represents a Twitch live background class.
@@ -73,46 +85,39 @@ class TwitchLiveBackground {
    * @constructor
    */
   constructor() {
-    this.#loadSettings();
+    /* Load settings from local storage */
+    browser.storage.local
+      .get(["userId", "accessToken", "userName"])
+      .then(({ userId, accessToken, userName }) => {
+        if (userId && accessToken && userName) {
+          this.#UserID = userId;
+          this.#AccessToken = accessToken;
+          this.#UserName = userName;
+          this.#refresh();
+        } else throw new Error("No user data found");
+      })
+      .catch((e) => this.#errorHandler(e.message));
 
+    /* Create context menus */
     browser.contextMenus.create({
       title: "About Twitch Live",
       contexts: ["browser_action"],
-      onclick: function () {
-        browser.tabs.create({ url: "about.html" });
-      },
+      onclick: () => browser.tabs.create({ url: "about.html" }),
     });
 
     browser.contextMenus.create({
       title: "Twitch Live Options",
       contexts: ["browser_action"],
-      onclick: function () {
-        browser.tabs.create({ url: "options.html" });
-      },
+      onclick: () => browser.tabs.create({ url: "options.html" }),
     });
   }
 
   /**
-   * Loads settings from local storage.
+   * Port manager
+   * @param {browser.Runtime.Port} port - The port to listen to.
    * @private
    */
-  async #loadSettings(): Promise<void> {
-    try {
-      type browserData = { userId: string; accessToken: string; userName: string };
-      const { userId, accessToken, userName } = (await browser.storage.local.get(["userId", "accessToken", "userName"])) as browserData;
-
-      if (userId && accessToken && userName) {
-        this.#UserID = userId;
-        this.#AccessToken = accessToken;
-        this.#UserName = userName;
-        await this.#refresh();
-      } else throw new Error("No user data found");
-    } catch (e) {
-      await this.#twitchLogout();
-    }
-  }
-
-  async listener(port: browser.Runtime.Port) {
+  async portListener(port: browser.Runtime.Port) {
     this.#ports.push(port);
 
     port.onMessage.addListener((message: Message) => this.#messenger(message, port));
@@ -129,7 +134,7 @@ class TwitchLiveBackground {
   }
 
   /**
-   * Asynchronous message handler
+   * Message handler
    * @private
    */
   async #messenger(message: Message, port: browser.Runtime.Port) {
@@ -260,7 +265,6 @@ class TwitchLiveBackground {
     this.#UserName = user.display_name;
 
     await browser.storage.local.set({ userId: this.#UserID, userName: this.#UserName });
-    return true;
   }
 
   async #twitchLogout() {
@@ -304,4 +308,4 @@ class TwitchLiveBackground {
 
 const background: TwitchLiveBackground = new TwitchLiveBackground();
 
-browser.runtime.onConnect.addListener(background.listener.bind(background));
+browser.runtime.onConnect.addListener(background.portListener.bind(background));

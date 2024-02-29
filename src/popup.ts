@@ -47,9 +47,11 @@ function setErrorMessage(msg: string = "") {
 async function init() {
   const streamList = document.querySelector<HTMLDivElement>("#streamList");
   if (!streamList) throw new Error("Error working with document.");
-  Array.from(streamList.children).forEach(el => el.remove());
+  Array.from(streamList.children).forEach((el) => el.remove());
 
-  document.querySelectorAll<HTMLDivElement>("#noStreamsDiv, #errorContainer, #optionsErrorDiv").forEach(el => { el.style.display = "none" });
+  document.querySelectorAll<HTMLDivElement>("#noStreamsDiv, #errorContainer, #optionsErrorDiv").forEach((el) => {
+    el.style.display = "none";
+  });
 
   const refreshAnchor = document.querySelector<HTMLAnchorElement>("#refreshAnchor");
   if (!refreshAnchor) throw new Error("Error working with document.");
@@ -116,7 +118,7 @@ const updateView = (streams: any[]) => {
   const streamList = document.querySelector<HTMLDivElement>("#streamList");
   const noStreamsDiv = document.querySelector<HTMLDivElement>("#noStreamsDiv");
   if (!streamList || !noStreamsDiv) throw new Error("Error working with document.");
-  Array.from(streamList.children).forEach(el => el.remove());
+  Array.from(streamList.children).forEach((el) => el.remove());
 
   if (!len) {
     noStreamsDiv.style.display = "";
