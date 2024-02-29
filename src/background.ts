@@ -7,31 +7,33 @@
 */
 import browser from "webextension-polyfill";
 
-type AuthMessage = { command: "twitchAuth" };
-type LoggedInMessage = { command: "loggedin" };
-type LogoutMessage = { command: "twitchLogout" };
-type LoggedOutMessage = { command: "loggedout"; data: boolean };
-type UserInfoMessage = { command: "userInfo" };
-type InfoMessage = { command: "info"; data: { isLoggedIn: boolean; userName: string } };
+type AuthMessage = { command: "login" };
+type LogoutMessage = { command: "logout" };
+type UserInfoMessage = { command: "getInfo" };
+type UserInfo = { isLoggedIn: boolean; userName: string };
+type InfoMessage = { command: "info"; data: UserInfo };
 type GetStreamsMessage = { command: "getStreams" };
 type StreamsMessage = { command: "streams"; data: Record<string, any>[] };
 type RefreshStreamsMessage = { command: "refreshStreams" };
 type GetStatusMessage = { command: "getStatus" };
 type StatusMessage = { command: "status"; data: string };
-type ErrorMessage = { command: "error"; data: string };
-export type Message =
-  | AuthMessage
-  | LoggedInMessage
-  | LogoutMessage
-  | LoggedOutMessage
-  | UserInfoMessage
-  | InfoMessage
-  | GetStreamsMessage
-  | StreamsMessage
-  | RefreshStreamsMessage
-  | GetStatusMessage
-  | StatusMessage
-  | ErrorMessage;
+export type Message = AuthMessage | LogoutMessage | UserInfoMessage | InfoMessage | GetStreamsMessage | StreamsMessage | RefreshStreamsMessage | GetStatusMessage | StatusMessage;
+
+export type TwitchUserData = {
+  user_login: string;
+  user_name: string;
+  game_name: string;
+  type: string;
+  title: string;
+  viewer_count: number;
+  started_at: string;
+};
+export type TwitchUserResponse = {
+  data: TwitchUserData[];
+  pagination: {
+    cursor: string;
+  };
+};
 
 /**
  * Represents a Twitch live background class.
@@ -44,9 +46,9 @@ class TwitchLiveBackground {
   #ClientID: string = "qxn1utz0tedn3vjv4k0tlrf5zfnpr3";
 
   /** The update interval for the background in milliseconds.
-   * @default 2 minutes (2 * 1000 * 60 milliseconds)
+   * @default 2 minutes (2 * 60 * 1000 milliseconds)
    */
-  UpdateInterval: number = 2 * 1000 * 60;
+  UpdateInterval: number = 30 * 1000;
 
   /** Twitch API access token.
    * @private
@@ -65,7 +67,7 @@ class TwitchLiveBackground {
 
   /** Active timer
    */
-  _timer: number | undefined = undefined;
+  #timer: number | undefined = undefined;
 
   /** Array of listener ports
    *
@@ -113,51 +115,57 @@ class TwitchLiveBackground {
   }
 
   /**
-   * Port manager
-   * @param {browser.Runtime.Port} port - The port to listen to.
-   * @private
-   */
-  async portListener(port: browser.Runtime.Port) {
-    this.#ports.push(port);
-
-    port.onMessage.addListener((message: Message) => this.#messenger(message, port));
-    port.onDisconnect.addListener((port) => {
-      // Remove the port from the list on disconnect
-      this.#ports = this.#ports.filter((p) => p !== port);
-    });
-  }
-
-  async #sendMessage(message: Message) {
-    for (const port of this.#ports) {
-      port.postMessage(message);
-    }
-  }
-
-  /**
-   * Message handler
+   * Inter-page message handler
    * @private
    */
   async #messenger(message: Message, port: browser.Runtime.Port) {
     switch (message.command) {
-      case "twitchAuth":
-        await this.#twitchLogin();
-        return port.postMessage({ command: "loggedin" } as Message);
+      case "login":
+        this.#twitchLogin();
+        break;
 
-      case "twitchLogout":
-        await this.#twitchLogout();
-        return port.postMessage({ command: "loggedout" } as Message);
+      case "logout":
+        this.#twitchLogout();
+        break;
 
-      case "userInfo":
-        return port.postMessage({ command: "info", data: { isLoggedIn: this.#UserID !== "", userName: this.#UserName } } as Message);
+      case "getInfo":
+        port.postMessage({ command: "info", data: { isLoggedIn: this.#UserID !== "", userName: this.#UserName } } as Message);
+        break;
 
       case "getStreams":
-        return port.postMessage({ command: "streams", data: this.#streams } as Message);
+        port.postMessage({ command: "streams", data: this.#streams } as Message);
+        break;
 
       case "refreshStreams":
-        return this.#refresh();
+        this.#refresh();
+        break;
 
       case "getStatus":
-        return port.postMessage({ command: "status", data: this.#errorMessage } as Message);
+        port.postMessage({ command: "status", data: this.#errorMessage } as Message);
+        break;
+    }
+  }
+
+  /**
+   * Public listener for inter-page communication
+   * @param {browser.Runtime.Port} port - The port to send and listen on.
+   * @private
+   */
+  portListener(port: browser.Runtime.Port) {
+    this.#ports.push(port);
+    port.onMessage.addListener((message, port) => this.#messenger(message, port));
+    port.onDisconnect.addListener((port) => {
+      this.#ports = this.#ports.filter((p) => p !== port);
+    });
+  }
+
+  /** Sends a message to all listening ports.
+   * @param {Message} message - The message to send.
+   * @private
+   */
+  async #sendMessage(message: Message) {
+    for (const port of this.#ports) {
+      port.postMessage(message);
     }
   }
 
@@ -197,15 +205,15 @@ class TwitchLiveBackground {
   }
 
   async #refresh() {
-    if (this._timer) {
-      window.clearTimeout(this._timer);
-      this._timer = undefined;
+    if (this.#timer) {
+      window.clearTimeout(this.#timer);
+      this.#timer = undefined;
     }
     if (!this.#UserID) {
       this.#updateIcon();
       return;
     }
-    this._timer = window.setTimeout((bg: TwitchLiveBackground) => bg.#refresh(), this.UpdateInterval, this);
+    this.#timer = window.setTimeout((bg: TwitchLiveBackground) => bg.#refresh(), this.UpdateInterval, this);
 
     this.#refreshStreams();
   }
@@ -268,9 +276,9 @@ class TwitchLiveBackground {
   }
 
   async #twitchLogout() {
-    if (this._timer) {
-      window.clearTimeout(this._timer);
-      this._timer = undefined;
+    if (this.#timer) {
+      window.clearTimeout(this.#timer);
+      this.#timer = undefined;
     }
 
     this.#streams = [];
@@ -300,7 +308,7 @@ class TwitchLiveBackground {
   #errorHandler(errorMsg: string) {
     this.#errorMessage = errorMsg;
     if (errorMsg) {
-      this.#sendMessage({ command: "error", data: errorMsg });
+      this.#sendMessage({ command: "status", data: errorMsg });
       this.#updateIcon("?", "#ff0000");
     }
   }

@@ -19,8 +19,8 @@ background.onMessage.addListener((message: Message) => {
   }
 });
 
-const authenticateWithTwitch = () => sendMessage({ command: "twitchAuth" });
-const logOutTwitch = () => sendMessage({ command: "twitchLogout" });
+const authenticateWithTwitch = () => sendMessage({ command: "login" });
+const logOutTwitch = () => sendMessage({ command: "logout" });
 
 const checkLogin = async (userInfo: { isLoggedIn: Boolean; userName: string }) => {
   const authBtn = document.getElementById("authenticateButton") as HTMLButtonElement;
@@ -42,7 +42,7 @@ const checkLogin = async (userInfo: { isLoggedIn: Boolean; userName: string }) =
 const onStorageUpdate = function () {
   window.removeEventListener("storage", onStorageUpdate);
   window.addEventListener("storage", onStorageUpdate);
-  sendMessage({ command: "userInfo" });
+  sendMessage({ command: "getInfo" });
 };
 
 window.addEventListener("storage", onStorageUpdate);

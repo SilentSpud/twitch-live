@@ -1,7 +1,5 @@
 # Generated Files
-ext/scripts/background.js
-ext/scripts/options.js
-ext/scripts/popup.js
+ext/scripts/*.js
 
 # Logs
 logs
