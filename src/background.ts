@@ -7,10 +7,19 @@
 */
 import browser from "webextension-polyfill";
 
-export type Message = {
-  command: string;
-  data?: any;
-};
+type AuthMessage = { command: "twitchAuth" };
+type LoggedInMessage = { command: "loggedin" };
+type LogoutMessage = { command: "twitchLogout" };
+type LoggedOutMessage = { command: "loggedout"; data: boolean };
+type UserInfoMessage = { command: "userInfo" };
+type InfoMessage = { command: "info"; data: { isLoggedIn: boolean; userName: string } };
+type GetStreamsMessage = { command: "getStreams" };
+type StreamsMessage = { command: "streams"; data: Record<string, any>[] };
+type RefreshStreamsMessage = { command: "refreshStreams" };
+type GetStatusMessage = { command: "getStatus" };
+type StatusMessage = { command: "status"; data: string };
+type ErrorMessage = { command: "error"; data: string };
+export type Message = AuthMessage | LoggedInMessage | LogoutMessage | LoggedOutMessage | UserInfoMessage | InfoMessage | GetStreamsMessage | StreamsMessage | RefreshStreamsMessage | GetStatusMessage | StatusMessage | ErrorMessage;
 
 /**
  * Represents a Twitch live background class.
@@ -59,8 +68,6 @@ class TwitchLiveBackground {
   #errorMessage = "";
 
   #streamBuffer = [];
-
-  #openInPopout = false;
 
   /** Initializes a new instance of the TwitchLiveBackground class.
    * @constructor
@@ -115,7 +122,7 @@ class TwitchLiveBackground {
     });
   }
 
-  async #message(message: Message) {
+  async #sendMessage(message: Message) {
     for (const port of this.#ports) {
       port.postMessage(message);
     }
@@ -128,20 +135,15 @@ class TwitchLiveBackground {
   async #messenger(message: Message, port: browser.Runtime.Port) {
     switch (message.command) {
       case "twitchAuth":
-        return port.postMessage({ command: "loggedin", data: await this.#twitchLogin() } as Message);
+        await this.#twitchLogin();
+        return port.postMessage({ command: "loggedin" } as Message);
 
       case "twitchLogout":
         await this.#twitchLogout();
-        return port.postMessage({ command: "loggedout", data: true } as Message);
+        return port.postMessage({ command: "loggedout" } as Message);
 
       case "userInfo":
         return port.postMessage({ command: "info", data: { isLoggedIn: this.#UserID !== "", userName: this.#UserName } } as Message);
-
-      case "getPopout":
-        return port.postMessage({ command: "popout", data: this.#openInPopout } as Message);
-
-      case "setPopout":
-        return this.#openInPopout = message.data;
 
       case "getStreams":
         return port.postMessage({ command: "streams", data: this.#streams } as Message);
@@ -181,9 +183,9 @@ class TwitchLiveBackground {
     return response;
   }
 
-  #updateIcon() {
-    const color = this.#streams.length > 0 ? "#0000FF" : "#000000";
-    const text = this.#streams.length > 0 ? String(this.#streams.length) : "";
+  #updateIcon(givenText?: string, givenColor?: string) {
+    const color = givenColor ? givenColor : this.#streams.length > 0 ? "#0000FF" : "#000000";
+    const text = givenText ? givenText : this.#streams.length > 0 ? String(this.#streams.length) : "";
 
     chrome.browserAction.setBadgeBackgroundColor({ color });
     chrome.browserAction.setBadgeText({ text });
@@ -207,7 +209,7 @@ class TwitchLiveBackground {
     //https://dev.twitch.tv/docs/api/reference#get-followed-streams
     const data = await this.#fetch(`https://api.twitch.tv/helix/streams/followed?first=100&user_id=${this.#UserID}${cursor ? `&after=${cursor}` : ""}`, "GET")
       .then((response) => response.json())
-      .catch((e) => this.announceError(e.message));
+      .catch((e) => this.#errorHandler(e.message));
 
     this.#streamBuffer.push.apply(this.#streamBuffer, data.data);
 
@@ -216,7 +218,7 @@ class TwitchLiveBackground {
     if (!newCursor) {
       this.#streams = this.#streamBuffer;
       this.#updateIcon();
-      this.#message({ command: "streams", data: this.#streams });
+      this.#sendMessage({ command: "streams", data: this.#streams });
       this.#streamBuffer = [];
     } else {
       this.#refreshStreams(newCursor);
@@ -245,7 +247,7 @@ class TwitchLiveBackground {
 
     const data = await this.#fetch("https://api.twitch.tv/helix/users")
       .then((response) => response.json())
-      .catch((e) => this.announceError(e.message));
+      .catch((e) => this.#errorHandler(e.message));
     const results = data.data;
 
     if (!results || results.length === 0) {
@@ -291,13 +293,11 @@ class TwitchLiveBackground {
     }
   }
 
-  announceError(msg: string) {
-    this.#errorMessage = msg;
-
-    //should move this to updateBadge
-    if (msg) {
-      chrome.browserAction.setBadgeBackgroundColor({ color: [255, 0, 0, 255] });
-      chrome.browserAction.setBadgeText({ text: "?" });
+  #errorHandler(errorMsg: string) {
+    this.#errorMessage = errorMsg;
+    if (errorMsg) {
+      this.#sendMessage({ command: "error", data: errorMsg });
+      this.#updateIcon("?", "#ff0000");
     }
   }
 }

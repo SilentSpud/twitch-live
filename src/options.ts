@@ -9,44 +9,19 @@
 import type { Message } from "./background";
 import browser from "webextension-polyfill";
 
-let openInPopout: boolean = false;
 const background = browser.runtime.connect({ name: "options" });
+const sendMessage = (message: Message) => background.postMessage(message);
 background.onMessage.addListener((message: Message) => {
   switch (message.command) {
     case "info":
       checkLogin(message.data);
       break;
-    case "popout":
-      openInPopout = message.data;
-      document.querySelectorAll<HTMLInputElement>("#openInPopoutCheck").forEach(el => { el.checked = openInPopout });
-      break;
-    default:
-      break;
   }
 });
 
 
-const authenticateWithTwitch = () => background.postMessage({ command: "twitchAuth" } as Message);
-const logOutTwitch = () => background.postMessage({ command: "twitchLogout" } as Message);
-
-const storeData = function () {
-  const popoutBox = document.getElementById("openInPopoutCheck") as HTMLInputElement;
-  background.postMessage({ command: "setPopout", data: popoutBox.checked } as Message);
-
-  showStatusMessage("Options Saved");
-};
-
-const showStatusMessage = function (msg: string) {
-  const status = document.getElementById("status");
-  if (!status) throw new Error("status element not found");
-  status.innerHTML = msg;
-  status.style.opacity = "1";
-
-  setTimeout(function () {
-    status.innerHTML = "";
-    status.style.opacity = "0";
-  }, 4000);
-};
+const authenticateWithTwitch = () => sendMessage({ command: "twitchAuth" });
+const logOutTwitch = () => sendMessage({ command: "twitchLogout" });
 
 const checkLogin = async (userInfo: { isLoggedIn: Boolean; userName: string; }) => {
   const authBtn = document.getElementById("authenticateButton") as HTMLButtonElement;
@@ -68,19 +43,8 @@ const checkLogin = async (userInfo: { isLoggedIn: Boolean; userName: string; }) 
 const onStorageUpdate = function () {
   window.removeEventListener("storage", onStorageUpdate);
   window.addEventListener("storage", onStorageUpdate);
-  init();
+  sendMessage({ command: "userInfo" });
 };
 
-const onOpenInPopupChange = () => storeData();
-
-const init = async () => {
-  background.postMessage({ command: "userInfo" } as Message);
-
-  const popoutBox = document.getElementById("openInPopoutCheck") as HTMLInputElement;
-  popoutBox.removeEventListener("change", onOpenInPopupChange);
-  popoutBox.addEventListener("change", onOpenInPopupChange);
-};
-
-init();
 
 window.addEventListener("storage", onStorageUpdate);

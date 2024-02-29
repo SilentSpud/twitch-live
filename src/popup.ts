@@ -2,7 +2,8 @@ import type { Message } from "./background";
 import $ from "jquery";
 import browser from "webextension-polyfill";
 
-const background = browser.runtime.connect({ name: "options" });
+const background = browser.runtime.connect({ name: "popup" });
+const sendMessage = (message: Message) => background.postMessage(message);
 background.onMessage.addListener((message: Message) => {
   switch (message.command) {
     case "info":
@@ -12,6 +13,7 @@ background.onMessage.addListener((message: Message) => {
       break;
 
     case "status":
+    case "error":
       setErrorMessage(message.data);
       break;
 
@@ -23,7 +25,7 @@ background.onMessage.addListener((message: Message) => {
       break;
   }
 });
-background.postMessage({ command: "userInfo" } as Message);
+sendMessage({ command: "userInfo" });
 
 function setErrorMessage(msg: string = "") {
   if (msg !== "") {
@@ -52,14 +54,12 @@ async function init() {
   if (!refreshAnchor) throw new Error("Error working with document.");
   refreshAnchor.addEventListener("click", () => background.postMessage({ command: "refreshStreams" } as Message));
 
-  refreshAnchor.addEventListener("mousedown", () => document.getElementById("refreshAnchor")?.classList.remove("refreshImgDown"));
-  refreshAnchor.addEventListener("mouseup", () => document.getElementById("refreshAnchor")?.classList.add("refreshImgDown"));
-  refreshAnchor.addEventListener("mouseout", () => document.getElementById("refreshAnchor")?.classList.add("refreshImgDown"));
+  refreshAnchor.addEventListener("mousedown", () => document.getElementById("refreshAnchor")?.classList.add("refreshImgDown"));
+  refreshAnchor.addEventListener("mouseup", () => document.getElementById("refreshAnchor")?.classList.remove("refreshImgDown"));
+  refreshAnchor.addEventListener("mouseout", () => document.getElementById("refreshAnchor")?.classList.remove("refreshImgDown"));
 
-  background.postMessage({ command: "getStatus" } as Message);
-  background.postMessage({ command: "getStreams" } as Message);
-
-  //this is required so we can get the mouse cursor to change on hover
+  sendMessage({ command: "getStatus" });
+  sendMessage({ command: "getStreams" });
 
   //hack to work around chrome extension bug that gives focus to the refreshAnchor
   setTimeout(() => $("#refreshAnchor").trigger("blur"), 100);
@@ -152,13 +152,4 @@ const updateView = (streams: any[]) => {
   }
 
   $("#streamList").append(html);
-
-  // Replaced these with plain links
-  /*document.querySelectorAll(".streamDiv").forEach(el => el.addEventListener("click", () => {
-
-  }));
-
-  document.querySelectorAll(".streamSectionTitle").forEach(el => el.addEventListener("click", () => {
-    
-  }));*/
 };
