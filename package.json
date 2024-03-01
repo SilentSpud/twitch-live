@@ -1,6 +1,6 @@
 {
   "name": "twitch-live",
-  "version": "0.1.0",
+  "version": "0.9.0",
   "author": "",
   "repository": {
     "type": "git",
@@ -18,6 +18,6 @@
   "description": "Twitch TV extension for displaying a user's favorite channels which are currently live.",
   "license": "MIT",
   "scripts": {
-    "make": "bun build --target=browser --outdir=./ext/scripts/ --minify ./src/background.ts ./src/options.ts ./src/popup.ts"
+    "make": "bun build --target=browser --outdir=ext/scripts/ --minify src/background.ts src/options.ts src/popup.ts"
   }
 }

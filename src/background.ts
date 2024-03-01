@@ -77,9 +77,12 @@ class TwitchLiveBackground {
   /** Twitch live streams.
    * @private
    */
-  #streams: Array<any> = [];
+  #streams: TwitchUserData[] = [];
 
-  #errorMessage = "";
+  /** Status message.
+   * @private
+   */
+  #status = "";
 
   /** Initializes a new instance of the TwitchLiveBackground class.
    * @constructor
@@ -139,7 +142,7 @@ class TwitchLiveBackground {
         break;
 
       case "getStatus":
-        port.postMessage({ command: "status", data: this.#errorMessage } as Message);
+        port.postMessage({ command: "status", data: this.#status } as Message);
         break;
     }
   }
@@ -189,17 +192,29 @@ class TwitchLiveBackground {
       if (response.status === 401) {
         this.#twitchLogout();
       }
-      throw new Error(`Error: ${response.status} : ${response.statusText}`);
     }
     return response;
   }
 
+
+  /** Updates the browser action icon.
+   * @param {string} [givenText] - The text to display. Defaults to the number of streams live.
+   * @param {string} [givenColor] - The color to use for the badge. Defaults to blue if at least one stream is live, black if not.
+   * @private
+   */
   #updateIcon(givenText?: string, givenColor?: string) {
     const color = givenColor ? givenColor : this.#streams.length > 0 ? "#0000FF" : "#000000";
     const text = givenText ? givenText : this.#streams.length > 0 ? String(this.#streams.length) : "";
 
+    this.#status = "";
+
     chrome.browserAction.setBadgeBackgroundColor({ color });
     chrome.browserAction.setBadgeText({ text });
+  }
+
+  #errorHandler(errorMsg: string) {
+    this.#status = errorMsg;
+    this.#updateIcon("?", "#ff0000");
   }
 
   async #refresh() {
@@ -228,7 +243,7 @@ class TwitchLiveBackground {
     if (data.pagination && data.pagination.cursor) {
       let newCursor = data.pagination.cursor;
 
-      while (newCursor) {
+      while (newCursor != "") {
         const response = await this.#fetch(`https://api.twitch.tv/helix/streams/followed?first=100&user_id=${this.#UserID}&after=${newCursor}`, "GET");
         const data: TwitchUserResponse = await response.json();
 
@@ -254,7 +269,7 @@ class TwitchLiveBackground {
 
     if (code == null) {
       console.error("Unable to parse the response from Twitch.");
-      return false;
+      return;
     }
 
     this.#AccessToken = code;
@@ -267,7 +282,7 @@ class TwitchLiveBackground {
 
     if (!results || results.length === 0) {
       console.error("Unable to retrieve user data from Twitch API.");
-      return false;
+      return;
     }
 
     const user = results[0];
@@ -296,12 +311,6 @@ class TwitchLiveBackground {
 
     this.#refresh();
     this.#updateIcon();
-  }
-
-  #errorHandler(errorMsg: string) {
-    if (errorMsg) {
-      this.#updateIcon("?", "#ff0000");
-    }
   }
 }
 

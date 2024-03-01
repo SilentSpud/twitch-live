@@ -19,13 +19,6 @@ background.onMessage.addListener((message: Message) => {
   }
 });
 
-const authenticateWithTwitch = () => {
-  sendMessage({ command: "login" });
-};
-const logOutTwitch = () => {
-  sendMessage({ command: "logout" });
-};
-
 const checkLogin = async (userInfo: { isLoggedIn: Boolean; userName: string }) => {
   const authBtn = document.getElementById("authenticateButton") as HTMLButtonElement;
   const userNameField = document.getElementById("userName") as HTMLSpanElement;
@@ -35,13 +28,13 @@ const checkLogin = async (userInfo: { isLoggedIn: Boolean; userName: string }) =
     authBtn.innerHTML = "Log out of Twitch account";
     authBtn.classList.remove("btn-success");
     authBtn.classList.add("btn-warning");
-    authBtn.onclick = logOutTwitch;
+    authBtn.onclick = () => sendMessage({ command: "logout" });
     userNameField.innerHTML = `Logged in as ${userInfo.userName}`;
   } else {
     authBtn.innerHTML = "Log in to Twitch account";
     authBtn.classList.remove("btn-warning");
     authBtn.classList.add("btn-success");
-    authBtn.onclick = authenticateWithTwitch;
+    authBtn.onclick = () => sendMessage({ command: "login" });
     userNameField.innerHTML = "Not logged in";
   }
 };
