@@ -9,19 +9,12 @@
 body {
   min-width: 350px;
   min-height: 100px;
-  /*font: 12px 'Lucida Grande', Arial, Noto Sans, Monospace, sans-serif;*/
   font: 12px "Verdana";
   padding: 10px;
   padding-bottom: 0;
   overflow-x: hidden;
   -webkit-user-select: none;
   user-select: none;
-}
-
-h1 {
-  font: 16px "Helvetica";
-  font-size: 20px;
-  border-bottom: 1px solid #c5c5c5;
 }
 
 a {
@@ -44,7 +37,6 @@ ul li:before {
 }
 
 .streamSectionTitle {
-  font-size: 12px;
   padding: 0;
   border-bottom: 1px solid #c5c5c5;
   -webkit-user-select: none;
@@ -87,6 +79,7 @@ ul li:before {
 .streamDiv a {
   display: block;
   text-decoration: none;
+  font-size: 11pt;
   /*color: #333333;*/
 }
 
