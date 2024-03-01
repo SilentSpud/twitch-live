@@ -23,14 +23,14 @@ export type TwitchUserData = {
   user_login: string;
   user_name: string;
   game_name: string;
-  type: string;
+  type: "live";
   title: string;
   viewer_count: number;
   started_at: string;
 };
 export type TwitchUserResponse = {
   data: TwitchUserData[];
-  pagination: {
+  pagination?: {
     cursor: string;
   };
 };
@@ -80,8 +80,6 @@ class TwitchLiveBackground {
   #streams: Array<any> = [];
 
   #errorMessage = "";
-
-  #streamBuffer = [];
 
   /** Initializes a new instance of the TwitchLiveBackground class.
    * @constructor
@@ -218,24 +216,28 @@ class TwitchLiveBackground {
     this.#refreshStreams();
   }
 
-  async #refreshStreams(cursor?: string) {
+  async #refreshStreams() {
+    this.#streams = [];
+
     //https://dev.twitch.tv/docs/api/reference#get-followed-streams
-    const data = await this.#fetch(`https://api.twitch.tv/helix/streams/followed?first=100&user_id=${this.#UserID}${cursor ? `&after=${cursor}` : ""}`, "GET")
-      .then((response) => response.json())
-      .catch((e) => this.#errorHandler(e.message));
+    const response = await this.#fetch(`https://api.twitch.tv/helix/streams/followed?first=100&user_id=${this.#UserID}`, "GET");
+    const data: TwitchUserResponse = await response.json();
 
-    this.#streamBuffer.push.apply(this.#streamBuffer, data.data);
+    this.#streams.push.apply(this.#streams, data.data);
 
-    const newCursor = data.pagination.cursor;
+    if (data.pagination && data.pagination.cursor) {
+      let newCursor = data.pagination.cursor;
 
-    if (!newCursor) {
-      this.#streams = this.#streamBuffer;
-      this.#updateIcon();
-      this.#sendMessage({ command: "streams", data: this.#streams });
-      this.#streamBuffer = [];
-    } else {
-      this.#refreshStreams(newCursor);
+      while (newCursor) {
+        const response = await this.#fetch(`https://api.twitch.tv/helix/streams/followed?first=100&user_id=${this.#UserID}&after=${newCursor}`, "GET");
+        const data: TwitchUserResponse = await response.json();
+
+        this.#streams.push.apply(this.#streams, data.data);
+        newCursor = data.pagination?.cursor ?? "";
+      }
     }
+    this.#updateIcon();
+    this.#sendMessage({ command: "streams", data: this.#streams });
   }
 
   async #twitchLogin() {
@@ -294,21 +296,10 @@ class TwitchLiveBackground {
 
     this.#refresh();
     this.#updateIcon();
-
-    window.addEventListener("storage", this.onStorageUpdate);
-  }
-
-  onStorageUpdate(evt: StorageEvent) {
-    if (evt.key === "USER_ID_STORAGE_TOKEN" || evt.key === "ACCESS_TOKEN_STORAGE_TOKEN") {
-      this.#UserID = evt.newValue ?? "";
-      this.#refresh();
-    }
   }
 
   #errorHandler(errorMsg: string) {
-    this.#errorMessage = errorMsg;
     if (errorMsg) {
-      this.#sendMessage({ command: "status", data: errorMsg });
       this.#updateIcon("?", "#ff0000");
     }
   }

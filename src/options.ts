@@ -19,30 +19,32 @@ background.onMessage.addListener((message: Message) => {
   }
 });
 
-const authenticateWithTwitch = () => sendMessage({ command: "login" });
-const logOutTwitch = () => sendMessage({ command: "logout" });
+const authenticateWithTwitch = () => {
+  sendMessage({ command: "login" });
+};
+const logOutTwitch = () => {
+  sendMessage({ command: "logout" });
+};
 
 const checkLogin = async (userInfo: { isLoggedIn: Boolean; userName: string }) => {
   const authBtn = document.getElementById("authenticateButton") as HTMLButtonElement;
   const userNameField = document.getElementById("userName") as HTMLSpanElement;
+  authBtn.disabled = false;
 
   if (userInfo.isLoggedIn) {
-    authBtn.innerHTML = "Log out of Twitch";
+    authBtn.innerHTML = "Log out of Twitch account";
+    authBtn.classList.remove("btn-success");
+    authBtn.classList.add("btn-warning");
     authBtn.onclick = logOutTwitch;
-    authBtn.disabled = false;
-    userNameField.innerHTML = userInfo.userName + "&nbsp;&nbsp;";
+    userNameField.innerHTML = `Logged in as ${userInfo.userName}`;
   } else {
-    authBtn.innerHTML = "Authenticate with Twitch";
+    authBtn.innerHTML = "Log in to Twitch account";
+    authBtn.classList.remove("btn-warning");
+    authBtn.classList.add("btn-success");
     authBtn.onclick = authenticateWithTwitch;
-    authBtn.disabled = false;
-    userNameField.innerHTML = "";
+    userNameField.innerHTML = "Not logged in";
   }
 };
 
-const onStorageUpdate = function () {
-  window.removeEventListener("storage", onStorageUpdate);
-  window.addEventListener("storage", onStorageUpdate);
-  sendMessage({ command: "getInfo" });
-};
-
-window.addEventListener("storage", onStorageUpdate);
+sendMessage({ command: "getInfo" });
+window.addEventListener("storage", () => window.setTimeout(() => sendMessage({ command: "getInfo" }), 500));

@@ -48,7 +48,7 @@ function setErrorMessage(msg: string = "") {
     const errorBox = document.querySelector<HTMLDivElement>("#errorContainer");
     if (errorBox) {
       errorBox.innerHTML = msg;
-      errorBox.style.display = "block";
+      errorBox.style.display = "";
     }
   } else {
     const errorBox = document.querySelector<HTMLDivElement>("#errorContainer");
@@ -100,13 +100,13 @@ const updateView = (streams: any[]) => {
 
   const formatter = new Intl.NumberFormat();
   for (const [categoryName, gameStreams] of sortedStreams) {
-    html += `<div class="streamSectionTitle"><a draggable="false" href="https://www.twitch.tv/directory/game/${encodeURIComponent(categoryName)}">${categoryName}</a></div>`;
+    html += `<div class="streamSectionTitle"><a class="text-body" draggable="false" href="https://www.twitch.tv/directory/game/${encodeURIComponent(categoryName)}">${categoryName}</a></div>`;
 
     for (const stream of gameStreams) {
       //sometimes the user name is empty, so we will show the login name for the streamer (usually the same just different case)
       const streamName = stream.user_name ?? stream.user_login;
 
-      html += `<div class="streamDiv"><a draggable="false" title="${stream.title.replace(/"/g, "&quot;")}" href="https://www.twitch.tv/${encodeURIComponent(
+      html += `<div class="streamDiv"><a class="text-body" draggable="false" title="${stream.title.replace(/"/g, "&quot;")}" href="https://www.twitch.tv/${encodeURIComponent(
         stream.user_login
       )}">${streamName}<span class="channelCount">${formatter.format(stream.viewer_count)}</span></a></div>`;
     }

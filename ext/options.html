@@ -12,29 +12,30 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Twitch Live - Options</title>
-  <link rel="stylesheet" href="styles/options.css" type="text/css" />
+  <link rel="stylesheet" type="text/css" href="styles/darkly.css" />
   <script type="application/javascript" src="scripts/options.js" type="module" defer></script>
 </head>
 
 <body>
-
-  <div id="header">
-    <h1>Twitch Live Extension Options</h1>
-  </div>
-
-  <form name="optionsform" accept-charset="utf-8">
-    <div class="gc-settings-content">
-      <table class="gc-settings-table" id="gc-settings-voicemail-content">
-        <tr>
-          <th class="left">Twitch Account</th>
-          <td class="right">
-            <span id="userName"></span>
-            <button disabled="disabled" id="authenticateButton">Loading...</button>
-          </td>
-        </tr>
-      </table>
+  <div class="container">
+    <div id="header">
+      <h2>Twitch Live Extension Options</h2>
     </div>
-  </form>
+    <form name="optionsform" accept-charset="utf-8">
+      <div class="gc-settings-content">
+        <div class="row g-3 align-items-center">
+          <div class="col-auto">
+            <label for="authenticateButton" class="col-form-label">Twitch Account:</label>
+          </div>
+          <div class="col-auto">
+            <span id="userName" class="form-text"></span>
+          </div>
+          <div class="col-auto">
+            <button type="button" class="btn" disabled="disabled" id="authenticateButton">Loading...</button>
+          </div>
+        </div>
+    </form>
+  </div>
 
 </body>
 
