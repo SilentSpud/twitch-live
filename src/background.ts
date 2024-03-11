@@ -113,6 +113,9 @@ class TwitchLiveBackground {
       contexts: ["browser_action"],
       onclick: () => browser.tabs.create({ url: "options.html" }),
     });
+
+    browser.runtime.onConnect.addListener(this.portListener.bind(this));
+    window.addEventListener("storage", this.storageListener.bind(this));
   }
 
   /**
@@ -149,8 +152,7 @@ class TwitchLiveBackground {
 
   /**
    * Public listener for inter-page communication
-   * @param {browser.Runtime.Port} port - The port to send and listen on.
-   * @private
+   * @param {browser.Runtime.Port} port - The port to send and listen on
    */
   portListener(port: browser.Runtime.Port) {
     this.#ports.push(port);
@@ -158,6 +160,16 @@ class TwitchLiveBackground {
     port.onDisconnect.addListener((port) => {
       this.#ports = this.#ports.filter((p) => p !== port);
     });
+  }
+
+  /** Public listener for local storage changes
+   * @param {StorageEvent} event - The storage event
+   */
+  storageListener(event: StorageEvent) {
+    if (event.key === "accessToken") {
+      this.#AccessToken = event.newValue ?? "";
+      this.#refresh();
+    }
   }
 
   /** Sends a message to all listening ports.
@@ -196,7 +208,6 @@ class TwitchLiveBackground {
     return response;
   }
 
-
   /** Updates the browser action icon.
    * @param {string} [givenText] - The text to display. Defaults to the number of streams live.
    * @param {string} [givenColor] - The color to use for the badge. Defaults to blue if at least one stream is live, black if not.
@@ -204,9 +215,7 @@ class TwitchLiveBackground {
    */
   #updateIcon(givenText?: string, givenColor?: string) {
     const color = givenColor ? givenColor : this.#streams.length > 0 ? "#0000FF" : "#000000";
-    const text = givenText ? givenText : this.#streams.length > 0 ? String(this.#streams.length) : "";
-
-    this.#status = "";
+    const text = givenText ? givenText : String(this.#streams.length || "");
 
     chrome.browserAction.setBadgeBackgroundColor({ color });
     chrome.browserAction.setBadgeText({ text });
@@ -226,12 +235,7 @@ class TwitchLiveBackground {
       this.#updateIcon();
       return;
     }
-    this.#timer = window.setTimeout((bg: TwitchLiveBackground) => bg.#refresh(), this.UpdateInterval, this);
 
-    this.#refreshStreams();
-  }
-
-  async #refreshStreams() {
     this.#streams = [];
 
     //https://dev.twitch.tv/docs/api/reference#get-followed-streams
@@ -251,7 +255,10 @@ class TwitchLiveBackground {
         newCursor = data.pagination?.cursor ?? "";
       }
     }
+
+    this.#status = "";
     this.#updateIcon();
+    this.#timer = window.setTimeout(this.#refresh.bind(this), this.UpdateInterval);
     this.#sendMessage({ command: "streams", data: this.#streams });
   }
 
@@ -290,6 +297,7 @@ class TwitchLiveBackground {
     this.#UserName = user.display_name;
 
     await browser.storage.local.set({ userId: this.#UserID, userName: this.#UserName });
+    this.#refresh();
   }
 
   async #twitchLogout() {
@@ -314,6 +322,4 @@ class TwitchLiveBackground {
   }
 }
 
-const background: TwitchLiveBackground = new TwitchLiveBackground();
-
-browser.runtime.onConnect.addListener(background.portListener.bind(background));
+new TwitchLiveBackground();
