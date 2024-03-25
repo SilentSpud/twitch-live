@@ -41,17 +41,25 @@ ul li:before {
   border-bottom: 1px solid #c5c5c5;
   -webkit-user-select: none;
   user-select: none;
-}
-.streamSectionTitle a {
-  padding-left: 5px;
-  padding-bottom: 3px;
-  border-top-left-radius: 3px;
-  border-top-right-radius: 3px;
-  /*color: #333333;*/
-}
 
-.streamSectionTitle a:hover {
-  background-color: #333;
+  &:hover {
+    cursor: pointer;
+  }
+
+  & a {
+    display: block;
+    text-decoration: none;
+    font-size: 11pt;
+    padding-left: 5px;
+    padding-bottom: 3px;
+    border-top-left-radius: 3px;
+    border-top-right-radius: 3px;
+    /*color: #333333;*/
+
+    &:hover {
+      background-color: #333;
+    }
+  }
 }
 
 .streamDiv {
@@ -61,30 +69,21 @@ ul li:before {
 
   -webkit-transition: background-color 250ms linear;
   transition: background-color 250ms linear;
-}
 
-.streamDiv a {
-  padding-left: 8px;
-  padding-right: 3px;
-  padding-top: 3px;
-  padding-bottom: 2px;
-  margin: 0;
-}
+  & a {
+    display: block;
+    text-decoration: none;
+    font-size: 11pt;
+    padding-left: 8px;
+    padding-right: 3px;
+    padding-top: 3px;
+    padding-bottom: 2px;
+    margin: 0;
 
-.streamDiv a:hover {
-  background-color: #555;
-}
-
-.streamSectionTitle a,
-.streamDiv a {
-  display: block;
-  text-decoration: none;
-  font-size: 11pt;
-  /*color: #333333;*/
-}
-
-.streamSectionTitle:hover {
-  cursor: pointer;
+    &:hover {
+      background-color: #555;
+    }
+  }
 }
 
 #errorContainer {

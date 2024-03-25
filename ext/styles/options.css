@@ -7,19 +7,18 @@ body {
 #header {
   padding-bottom: 1.5em;
   padding-top: 1.5em;
-}
 
-#header h1 {
-  font-size: 156%;
-  display: inline;
-  padding-bottom: 43px;
-  padding-left: 75px;
-  padding-top: 40px;
-  background: url(images/icon-lg.png) no-repeat;
-  background-size: 67px;
-  background-position: 1px 18px;
+  & h1 {
+    font-size: 156%;
+    display: inline;
+    padding-bottom: 43px;
+    padding-left: 75px;
+    padding-top: 40px;
+    background: url("images/icon-lg.png") no-repeat;
+    background-size: 67px;
+    background-position: 1px 18px;
+  }
 }
-
 #footer {
   margin-left: 24px;
   margin-top: 12px;
@@ -42,6 +41,19 @@ body {
 .gc-settings-table {
   width: 100%;
   font-size: 1em;
+
+  & th {
+    text-align: right;
+    width: 1%;
+    white-space: nowrap;
+    padding: 12px 24px 12px 12px;
+  }
+
+  & td {
+    width: 99%;
+    white-space: nowrap;
+    padding: 12px;
+  }
 }
 
 #userName,
@@ -49,17 +61,4 @@ body {
 .gc-settings-table .right {
   vertical-align: top;
   border-bottom: 0 dotted #aaa;
-}
-
-.gc-settings-table th {
-  text-align: right;
-  width: 1%;
-  white-space: nowrap;
-  padding: 12px 24px 12px 12px;
-}
-
-.gc-settings-table td {
-  width: 99%;
-  white-space: nowrap;
-  padding: 12px;
 }

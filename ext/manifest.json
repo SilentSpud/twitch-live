@@ -32,7 +32,7 @@
     "identity",
     "storage"
   ],
-  "version": "2.0.1",
+  "version": "3.0.0",
   "web_accessible_resources": [
     "images/icon.png"
   ]
