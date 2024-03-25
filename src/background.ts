@@ -226,6 +226,9 @@ class TwitchLiveBackground {
     this.#updateIcon("?", "#ff0000");
   }
 
+  /** Refresh the list of live streams
+   * @private
+   */
   async #refresh() {
     if (this.#timer) {
       window.clearTimeout(this.#timer);
@@ -262,6 +265,9 @@ class TwitchLiveBackground {
     this.#sendMessage({ command: "streams", data: this.#streams });
   }
 
+  /** Log in to Twitch and retrieve credentials
+   * @private
+   */
   async #twitchLogin() {
     const response = await browser.identity.launchWebAuthFlow({
       url: `https://id.twitch.tv/oauth2/authorize?client_id=${this.#ClientID}&force_verify=true&response_type=token&scope=user:read:follows&redirect_uri=${encodeURIComponent(
@@ -300,6 +306,9 @@ class TwitchLiveBackground {
     this.#refresh();
   }
 
+  /** Clear and revoke Twitch credentials
+   * @private
+   */
   async #twitchLogout() {
     if (this.#timer) {
       window.clearTimeout(this.#timer);
