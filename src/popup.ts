@@ -1,4 +1,4 @@
-import type { Message, TwitchUserData } from "./background";
+import type { Message, TwitchUserData } from "./types";
 import browser from "webextension-polyfill";
 
 /**
@@ -11,7 +11,7 @@ class TwitchLivePopup {
    */
   #background: browser.Runtime.Port;
 
-  #sendMessage = (message: Message) => this.#background.postMessage(message);
+  #sendMessage = (message: Message | Message[]) => Array.isArray(message) ? message.forEach(msg => this.#background.postMessage(msg)) : this.#background.postMessage(message);
 
   #listElement: HTMLDivElement;
   #optionsErrorDiv: HTMLDivElement;
@@ -37,9 +37,7 @@ class TwitchLivePopup {
     this.#noStreamsDiv = document.getElementById("noStreamsDiv") as HTMLDivElement;
     [this.#errorContainer, this.#optionsErrorDiv, this.#noStreamsDiv].forEach((el) => (el.style.display = "none"));
 
-    this.#sendMessage({ command: "getInfo" });
-    this.#sendMessage({ command: "getStatus" });
-    this.#sendMessage({ command: "getStreams" });
+    this.#sendMessage([{ command: "getInfo" }, { command: "getStatus" }, { command: "getStreams" }]);
   }
 
   #setStatus(msg: string = "") {

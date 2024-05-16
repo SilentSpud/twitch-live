@@ -14,12 +14,12 @@
   },
   "devDependencies": {
     "@types/bun": "latest",
-    "@types/chrome": "^0.0.263",
-    "@types/firefox-webext-browser": "^120.0.3",
-    "@types/webextension-polyfill": "^0.10.7",
+    "@types/chrome": "latest",
+    "@types/firefox-webext-browser": "latest",
+    "@types/webextension-polyfill": "latest",
     "typescript": "^5.4.3"
   },
   "dependencies": {
-    "webextension-polyfill": "^0.10.0"
+    "webextension-polyfill": "latest"
   }
 }

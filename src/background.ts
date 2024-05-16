@@ -6,34 +6,7 @@
     http://www.mikechambers.com
 */
 import browser from "webextension-polyfill";
-
-type AuthMessage = { command: "login" };
-type LogoutMessage = { command: "logout" };
-type UserInfoMessage = { command: "getInfo" };
-type UserInfo = { isLoggedIn: boolean; userName: string };
-type InfoMessage = { command: "info"; data: UserInfo };
-type GetStreamsMessage = { command: "getStreams" };
-type StreamsMessage = { command: "streams"; data: Record<string, any>[] };
-type RefreshStreamsMessage = { command: "refreshStreams" };
-type GetStatusMessage = { command: "getStatus" };
-type StatusMessage = { command: "status"; data: string };
-export type Message = AuthMessage | LogoutMessage | UserInfoMessage | InfoMessage | GetStreamsMessage | StreamsMessage | RefreshStreamsMessage | GetStatusMessage | StatusMessage;
-
-export type TwitchUserData = {
-  user_login: string;
-  user_name: string;
-  game_name: string;
-  type: "live";
-  title: string;
-  viewer_count: number;
-  started_at: string;
-};
-export type TwitchUserResponse = {
-  data: TwitchUserData[];
-  pagination?: {
-    cursor: string;
-  };
-};
+import type { TwitchUserData, Message, TwitchUserResponse } from "./types";
 
 /**
  * Represents a Twitch live background class.
@@ -269,12 +242,9 @@ class TwitchLiveBackground {
    * @private
    */
   async #twitchLogin() {
-    const response = await browser.identity.launchWebAuthFlow({
-      url: `https://id.twitch.tv/oauth2/authorize?client_id=${this.#ClientID}&force_verify=true&response_type=token&scope=user:read:follows&redirect_uri=${encodeURIComponent(
-        browser.identity.getRedirectURL()
-      )}`,
-      interactive: true,
-    });
+    const redir = encodeURIComponent(browser.identity.getRedirectURL());
+    const url = `https://id.twitch.tv/oauth2/authorize?client_id=${this.#ClientID}&force_verify=true&response_type=token&scope=user:read:follows&redirect_uri=${redir}`;
+    const response = await browser.identity.launchWebAuthFlow({ url, interactive: true });
 
     const search = response.split("/#");
     const params = new URLSearchParams(search[1]);
