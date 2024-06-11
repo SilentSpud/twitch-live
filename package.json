@@ -5,8 +5,9 @@
   "description": "Twitch TV extension for displaying a user's favorite channels which are currently live.",
   "license": "MIT",
   "scripts": {
-    "build": "bun build --target=browser --outdir=ext/scripts/ --minify --splitting src/background.ts src/options.ts src/popup.ts",
-    "dev": "bun build --target=browser --outdir=ext/scripts/ --watch src/background.ts src/options.ts src/popup.ts"
+    "build": "bun run clean && bun build --target=browser --outdir=ext/scripts/ --minify --splitting src/background.ts src/options.ts src/popup.ts",
+    "dev": "bun build --target=browser --outdir=ext/scripts/ --sourcemap --splitting --watch src/background.ts src/options.ts src/popup.ts",
+    "clean": "rm -f ext/scripts/*.js"
   },
   "repository": {
     "type": "git",

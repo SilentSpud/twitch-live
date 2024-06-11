@@ -19,6 +19,7 @@ background.onMessage.addListener((message: Message) => {
       break;
   }
 });
+sendMessage({ command: "getInfo" });
 
 const userNameField = document.getElementById("userName") as HTMLSpanElement;
 const authBtn = document.getElementById("authenticateButton") as HTMLButtonElement;
@@ -37,13 +38,15 @@ authBtn.addEventListener("click", (event) => {
 
 const checkLogin = async (userInfo: { isLoggedIn: boolean; userName: string }) => {
   authBtn.disabled = false;
-  authBtn.classList.toggle("btn-success");
-  authBtn.classList.toggle("btn-warning");
 
   if (userInfo.isLoggedIn) {
+    authBtn.classList.remove("btn-success");
+    authBtn.classList.add("btn-warning");
     authBtn.innerHTML = "Log out of Twitch account";
     userNameField.innerHTML = `Logged in as ${userInfo.userName}`;
   } else {
+    authBtn.classList.remove("btn-warning");
+    authBtn.classList.add("btn-success");
     authBtn.innerHTML = "Log in to Twitch account";
     userNameField.innerHTML = "Not logged in";
   }
