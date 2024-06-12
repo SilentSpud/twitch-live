@@ -60,24 +60,22 @@ const updateView = (streams: any[]) => {
 
   const sortedStreams = sortCategories(streams);
 
-  let html = "";
+  const html = <>
+    {sortedStreams.map(([categoryName, gameStreams]) => <>
+      <div class="streamSectionTitle">
+        <a class="text-body" draggable="false" href={"https://www.twitch.tv/directory/game/" + encodeURIComponent(categoryName)}>{categoryName}</a>
+      </div>
+      {gameStreams.map((stream) => {
 
-  for (const [categoryName, gameStreams] of sortedStreams) {
-    html += `<div class="streamSectionTitle"><a class="text-body" draggable="false" href="https://www.twitch.tv/directory/game/${encodeURIComponent(categoryName)}">${categoryName}</a></div>`;
+        return <div class="streamDiv">
+          <a class="text-body" draggable="false" title={stream.title.replace(/"/g, "&quot;")} href={`https://www.twitch.tv/${encodeURIComponent(stream.user_login)}`}>{stream.user_name ?? stream.user_login}<span class="channelCount">{new Intl.NumberFormat().format(stream.viewer_count)}</span></a>
+        </div>
+      })}
+      <div>&nbsp;</div>
+    </>)}
+  </>;
 
-    for (const stream of gameStreams) {
-      //sometimes the user name is empty, so we will show the login name for the streamer (usually the same just different case)
-      const streamName = stream.user_name ?? stream.user_login;
-
-      html += `<div class="streamDiv"><a class="text-body" draggable="false" title="${stream.title.replace(/"/g, "&quot;")}" href="https://www.twitch.tv/${encodeURIComponent(
-        stream.user_login
-      )}">${streamName}<span class="channelCount">${new Intl.NumberFormat().format(stream.viewer_count)}</span></a></div>`;
-    }
-
-    html += "<div>&nbsp;</div>";
-  }
-
-  streamList.innerHTML = html;
+  streamList.innerHTML = html.toString();
 };
 
 const sortCategories = (streams: TwitchUserData[]) => {

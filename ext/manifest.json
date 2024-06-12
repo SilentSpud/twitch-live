@@ -13,6 +13,7 @@
       "id": "{55d8b663-ebee-46e9-886b-2539b1ebc9c7}"
     }
   },
+  "default_locale": "en",
   "description": "Twitch TV extension for displaying a user's favorite channels which are currently live.",
   "homepage_url": "http://www.mikechambers.com/blog/2011/07/06/jtv-live-a-google-chrome-extension-for-justin-tv/",
   "icons": {
@@ -21,7 +22,7 @@
     "48": "images/icon-48.png"
   },
   "manifest_version": 2,
-  "name": "Twitch Live",
+  "name": "__MSG_extName__",
   "options_ui": {
     "page": "options.html",
     "open_in_tab": true

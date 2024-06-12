@@ -38,6 +38,23 @@ let ports: browser.Runtime.Port[] = [];
 let streams: TwitchUserData[] = [];
 let timer: number | undefined;
 
+let status: string = "";
+const errorHandler = (errorMsg: string) => {
+  status = errorMsg;
+  updateIcon("?", "#ff0000");
+};
+
+/** Updates the browser action icon.
+ * @param {string} [iconText] - The text to display. Defaults to the number of streams live.
+ * @param {string} [iconColor] - The color to use for the badge. Defaults to blue if at least one stream is live, black if not.
+ */
+const updateIcon = (iconText?: string, iconColor?: string) => {
+  const color = iconColor || !streams.length ? "#0000FF" : "#000000";
+  const text = iconText || streams.length.toString();
+  chrome.browserAction.setBadgeBackgroundColor({ color });
+  chrome.browserAction.setBadgeText({ text });
+};
+
 /** Fetch wrapper for Twitch API
  * @param {string} url - The URL to fetch
  * @param {string} method - The HTTP method to use
@@ -59,23 +76,6 @@ const twitchFetch = async (url: string, method: string = "GET"): Promise<Respons
     twitchLogout();
   }
   return response;
-};
-
-let status: string = "";
-const errorHandler = (errorMsg: string) => {
-  status = errorMsg;
-  updateIcon("?", "#ff0000");
-};
-
-/** Updates the browser action icon.
- * @param {string} [iconText] - The text to display. Defaults to the number of streams live.
- * @param {string} [iconColor] - The color to use for the badge. Defaults to blue if at least one stream is live, black if not.
- */
-const updateIcon = (iconText?: string, iconColor?: string) => {
-  const color = iconColor || !streams.length ? "#0000FF" : "#000000";
-  const text = iconText || streams.length.toString();
-  chrome.browserAction.setBadgeBackgroundColor({ color });
-  chrome.browserAction.setBadgeText({ text });
 };
 
 /**
@@ -137,7 +137,7 @@ const refresh = async () => {
       const response = await twitchFetch(`https://api.twitch.tv/helix/streams/followed?first=100&user_id=${config.UserID}&after=${newCursor}`, "GET");
       const data: TwitchUserResponse = await response.json();
 
-      streams.push.apply(streams, data.data);
+      streams.push(...data.data);
       newCursor = data.pagination?.cursor ?? "";
     }
   }
